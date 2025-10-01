@@ -18,7 +18,7 @@ const Header: React.FC = () => {
             </Link>
           </li>
           <li>
-            <Link href="/add-shop">
+            <Link href="/shops/new">
               <Button variant="ghost">Add Shop</Button>
             </Link>
           </li>
