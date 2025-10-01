@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Shop } from '../../types/shop';
-import ShopCard from './ShopCard';
+import React from "react";
+
+import ShopCard from "./ShopCard";
+import { Shop } from "../types/shop";
 
 interface ShopListProps {
   shops: Shop[];
