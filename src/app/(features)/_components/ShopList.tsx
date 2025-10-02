@@ -3,7 +3,7 @@
 import React from "react";
 
 import ShopCard from "./ShopCard";
-import { Shop } from "../types/shop";
+import { Shop } from "../_lib/types";
 
 interface ShopListProps {
   shops: Shop[];

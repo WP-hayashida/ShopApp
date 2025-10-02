@@ -11,15 +11,15 @@ const Header: React.FC = () => {
         ShopShare
       </Link>
       <nav>
-        <ul className="flex space-x-4">
+        <ul className="flex space-x-4 items-center">
           <li>
-            <Link href="/shops">
-              <Button variant="ghost">Shops</Button>
+            <Link href="/submit-shop">
+              <Button variant="outline" className="text-gray-800">Add Shop</Button>
             </Link>
           </li>
           <li>
-            <Link href="/shops/new">
-              <Button variant="ghost">Add Shop</Button>
+            <Link href="/my-page">
+              <Button variant="outline" className="text-gray-800">マイページ</Button>
             </Link>
           </li>
           <li>
