@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import ShopList from "@/app/(features)/_components/ShopList";
 import { dummyShops } from "@/app/(features)/_lib/data";
