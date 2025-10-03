@@ -1,3 +1,5 @@
+'use client'; // Add use client directive
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -12,11 +14,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "ShopShare",
-  description: "A web app for sharing shops",
-};
 
 export default function RootLayout({
   children,

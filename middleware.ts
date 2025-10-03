@@ -23,12 +23,20 @@ export async function middleware(request: NextRequest) {
             value,
             ...options,
           })
+<<<<<<< HEAD
+          response = NextResponse.next({
+=======
           response = NextResponse.next({ // This line was missing in the original snippet
+>>>>>>> feature/like-functionality
             request: {
               headers: request.headers,
             },
           })
+<<<<<<< HEAD
+          response.cookies.set({
+=======
           response.cookies.set({ // This line was missing in the original snippet
+>>>>>>> feature/like-functionality
             name,
             value,
             ...options,
@@ -40,12 +48,20 @@ export async function middleware(request: NextRequest) {
             value: '',
             ...options,
           })
+<<<<<<< HEAD
+          response = NextResponse.next({
+=======
           response = NextResponse.next({ // This line was missing in the original snippet
+>>>>>>> feature/like-functionality
             request: {
               headers: request.headers,
             },
           })
+<<<<<<< HEAD
+          response.cookies.set({
+=======
           response.cookies.set({ // This line was missing in the original snippet
+>>>>>>> feature/like-functionality
             name,
             value: '',
             ...options,

@@ -1,16 +1,17 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import { Button } from '@/components/ui/button';
 
 const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = useMemo(() => createClient(), []); // Wrap createClient in useMemo
+
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -35,7 +36,7 @@ const Header: React.FC = () => {
 
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -43,8 +44,9 @@ const Header: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    if (window.confirm("サインアウトしますか？")) {
+    if (window.confirm('サインアウトしますか？')) {
       await supabase.auth.signOut();
+      // Refresh the page to reflect the signed-out state
       window.location.reload();
     }
   };
