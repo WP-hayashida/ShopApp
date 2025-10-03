@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -32,7 +33,7 @@ const Header: React.FC = () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
   };
@@ -65,11 +66,12 @@ const Header: React.FC = () => {
             {!loading && user ? (
               <Button onClick={handleSignOut} variant="ghost" className="flex items-center space-x-2">
                 {user.user_metadata?.avatar_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={user.user_metadata.avatar_url}
                     alt="User Avatar"
-                    className="w-8 h-8 rounded-full"
+                    width={32}
+                    height={32}
+                    className="rounded-full"
                   />
                 )}
                 <span>{user.user_metadata?.name || user.email}</span>
