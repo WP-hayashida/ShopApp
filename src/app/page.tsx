@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import ShopList from "@/app/(features)/_components/ShopList";
-import { createClient } from '@/lib/supabase/client';
-import { Shop } from '@/app/(features)/_lib/types';
+import { createClient } from "@/lib/supabase/client";
+import { Shop } from "@/app/(features)/_lib/types";
 
 export default function HomePage() {
   const [shops, setShops] = useState<Shop[]>([]);
@@ -12,9 +12,9 @@ export default function HomePage() {
 
   useEffect(() => {
     const getShops = async () => {
-      const { data, error } = await supabase.from('shops').select('*');
+      const { data, error } = await supabase.from("shops").select("*");
       if (error) {
-        console.error('Error fetching shops:', error);
+        console.error("Error fetching shops:", error);
       } else {
         setShops(data as Shop[]);
       }

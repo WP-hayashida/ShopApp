@@ -62,7 +62,7 @@ export default function ShopNewPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
   };
@@ -70,7 +70,6 @@ export default function ShopNewPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // The user object is already in state, but we re-fetch just to be 100% sure.
     const { data: { user: submitUser } } = await supabase.auth.getUser();
 
     if (!submitUser) {
@@ -86,17 +85,15 @@ export default function ShopNewPage() {
 
       if (photo) {
         const fileExt = photo.name.split('.').pop();
-<<<<<<< HEAD
-        const fileName = `${submitUser.id}-${Date.now()}.${fileExt}`;
-=======
         const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
->>>>>>> feature/like-functionality
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('shop-photos')
           .upload(fileName, photo);
 
         if (uploadError) {
-          throw new Error(`写真のアップロードに失敗しました: ${uploadError.message}`);
+          throw new Error(
+            `写真のアップロードに失敗しました: ${uploadError.message}`
+          );
         }
 
         const { data: publicUrlData } = supabase.storage
@@ -105,7 +102,8 @@ export default function ShopNewPage() {
         photoUrl = publicUrlData.publicUrl;
       }
 
-      const businessHours = startTime && endTime ? `${startTime} - ${endTime}` : "";
+      const businessHours =
+        startTime && endTime ? `${startTime} - ${endTime}` : "";
       const shopData = {
         user_id: submitUser.id,
         name,
@@ -118,7 +116,9 @@ export default function ShopNewPage() {
         comments,
       };
 
-      const { error: insertError } = await supabase.from('shops').insert(shopData);
+      const { error: insertError } = await supabase
+        .from('shops')
+        .insert(shopData);
 
       if (insertError) {
         throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
@@ -126,7 +126,6 @@ export default function ShopNewPage() {
 
       alert("投稿が完了しました！");
       router.push("/");
-
     } catch (err: any) {
       setError(err.message);
       console.error(err);
@@ -162,22 +161,49 @@ export default function ShopNewPage() {
         {/* Form inputs... */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="例: Geminiカフェ" required />
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="例: Geminiカフェ"
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
-          <Input id="photo" type="file" onChange={(e) => setPhoto(e.target.files ? e.target.files[0] : null)} accept="image/*" />
+          <Input
+            id="photo"
+            type="file"
+            onChange={(e) =>
+              setPhoto(e.target.files ? e.target.files[0] : null)
+            }
+            accept="image/*"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
-          <Input id="url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com" />
+          <Input
+            id="url"
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
+          />
         </div>
         <div className="space-y-2">
           <Label>営業時間</Label>
           <div className="flex items-center space-x-2">
-            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            <Input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
             <span>-</span>
-            <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            <Input
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
           </div>
         </div>
         <div className="space-y-2">
@@ -188,7 +214,9 @@ export default function ShopNewPage() {
             </SelectTrigger>
             <SelectContent>
               {prefectures.map((pref) => (
-                <SelectItem key={pref} value={pref}>{pref}</SelectItem>
+                <SelectItem key={pref} value={pref}>
+                  {pref}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -201,18 +229,30 @@ export default function ShopNewPage() {
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
-          <Input id="detailedCategory" value={detailedCategory} onChange={(e) => setDetailedCategory(e.target.value)} placeholder="例: スペシャルティコーヒー" />
+          <Input
+            id="detailedCategory"
+            value={detailedCategory}
+            onChange={(e) => setDetailedCategory(e.target.value)}
+            placeholder="例: スペシャルティコーヒー"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="comments">コメント</Label>
-          <Textarea id="comments" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="お店の雰囲気やおすすめメニューなどを記入してください" />
+          <Textarea
+            id="comments"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="お店の雰囲気やおすすめメニューなどを記入してください"
+          />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>

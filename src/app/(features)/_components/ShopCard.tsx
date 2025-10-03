@@ -1,13 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Shop } from '../_lib/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import { Heart } from 'lucide-react'; // Import Heart icon
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import React, { useState, useEffect } from "react";
+import { Shop } from "../_lib/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { Heart } from "lucide-react"; // Import Heart icon
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 interface ShopCardProps {
   shop: Shop;
@@ -23,32 +30,34 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
   useEffect(() => {
     const checkLikeStatus = async () => {
       setLoadingLike(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
 
       if (user) {
         // Fetch like count for this shop
         const { count, error: countError } = await supabase
-          .from('likes')
-          .select('id', { count: 'exact' })
-          .eq('shop_id', shop.id);
+          .from("likes")
+          .select("id", { count: "exact" })
+          .eq("shop_id", shop.id);
 
         if (countError) {
-          console.error('Error fetching like count:', countError);
+          console.error("Error fetching like count:", countError);
         } else {
           setLikeCount(count || 0);
         }
 
         // Check if current user liked this shop
         const { data, error } = await supabase
-          .from('likes')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('shop_id', shop.id)
+          .from("likes")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("shop_id", shop.id)
           .maybeSingle();
 
         if (error) {
-          console.error('Error checking like status:', error);
+          console.error("Error checking like status:", error);
         } else {
           setIsLiked(!!data);
         }
@@ -61,7 +70,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
 
   const handleLikeToggle = async () => {
     if (!user) {
-      alert('いいねするにはログインしてください。');
+      alert("いいねするにはログインしてください。");
       return;
     }
 
@@ -69,31 +78,29 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
     if (isLiked) {
       // Unlike
       const { error } = await supabase
-        .from('likes')
+        .from("likes")
         .delete()
-        .eq('user_id', user.id)
-        .eq('shop_id', shop.id);
+        .eq("user_id", user.id)
+        .eq("shop_id", shop.id);
 
       if (error) {
-        console.error('Error unliking shop:', error);
+        console.error("Error unliking shop:", error);
       } else {
         setIsLiked(false);
-        setLikeCount(prev => prev - 1);
+        setLikeCount((prev) => prev - 1);
       }
     } else {
       // Like
-      const { error } = await supabase
-        .from('likes')
-        .insert({
-          user_id: user.id,
-          shop_id: shop.id,
-        });
+      const { error } = await supabase.from("likes").insert({
+        user_id: user.id,
+        shop_id: shop.id,
+      });
 
       if (error) {
-        console.error('Error liking shop:', error);
+        console.error("Error liking shop:", error);
       } else {
         setIsLiked(true);
-        setLikeCount(prev => prev + 1);
+        setLikeCount((prev) => prev + 1);
       }
     }
     setLoadingLike(false);
@@ -117,10 +124,16 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
         )}
       </CardHeader>
       <CardContent className="pt-4">
-        <CardTitle className="text-xl font-semibold mb-2">{shop.name}</CardTitle>
+        <CardTitle className="text-xl font-semibold mb-2">
+          {shop.name}
+        </CardTitle>
         <CardDescription className="text-sm text-gray-600">
-          <p><strong>カテゴリ:</strong> {shop.category}</p>
-          <p><strong>場所:</strong> {shop.location}</p>
+          <p>
+            <strong>カテゴリ:</strong> {shop.category}
+          </p>
+          <p>
+            <strong>場所:</strong> {shop.location}
+          </p>
         </CardDescription>
       </CardContent>
       <CardFooter className="flex justify-between items-center pb-4 pr-4">
@@ -130,9 +143,13 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
             size="icon"
             onClick={handleLikeToggle}
             disabled={loadingLike}
-            className={isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-400 hover:text-gray-500'}
+            className={
+              isLiked
+                ? "text-red-500 hover:text-red-600"
+                : "text-gray-400 hover:text-gray-500"
+            }
           >
-            <Heart fill={isLiked ? 'currentColor' : 'none'} />
+            <Heart fill={isLiked ? "currentColor" : "none"} />
           </Button>
           <span className="text-sm text-gray-600">{likeCount}</span>
         </div>

@@ -35,10 +35,7 @@ export default function MyPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [shops, setShops] = useState<Shop[]>([]);
-<<<<<<< HEAD
-=======
   const [likedShops, setLikedShops] = useState<Shop[]>([]);
->>>>>>> feature/like-functionality
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -79,19 +76,13 @@ export default function MyPage() {
         const { data: fetchedShops, error: shopsError } = await supabase
           .from("shops")
           .select("*")
-<<<<<<< HEAD
-          .eq('user_id', user.id); // Filter by user_id
-=======
           .eq('user_id', user.id);
->>>>>>> feature/like-functionality
 
         if (shopsError) {
           console.error("Error fetching shops for MyPage:", shopsError);
         } else {
           setShops((fetchedShops as Shop[]) || []);
         }
-<<<<<<< HEAD
-=======
 
         // Fetch shops liked by the user
         const { data: fetchedLikedShops, error: likedShopsError } = await supabase
@@ -105,7 +96,6 @@ export default function MyPage() {
           // The result is an array of { shops: Shop } objects, so we map it
           setLikedShops(fetchedLikedShops?.map(like => like.shops) as Shop[] || []);
         }
->>>>>>> feature/like-functionality
       }
       setLoading(false);
     };
@@ -127,7 +117,7 @@ export default function MyPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
   };
@@ -153,10 +143,6 @@ export default function MyPage() {
   }
 
   const myPosts = shops;
-<<<<<<< HEAD
-  const favoriteShops = []; // TODO: Implement favorites
-=======
->>>>>>> feature/like-functionality
 
   return (
     <div className="container mx-auto max-w-4xl py-10">
