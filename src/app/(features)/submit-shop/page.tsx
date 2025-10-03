@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -17,18 +17,70 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 const prefectures = [
-  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
-  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
-  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
-  "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
-  "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
-  "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
-  "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"
+  "北海道",
+  "青森県",
+  "岩手県",
+  "宮城県",
+  "秋田県",
+  "山形県",
+  "福島県",
+  "茨城県",
+  "栃木県",
+  "群馬県",
+  "埼玉県",
+  "千葉県",
+  "東京都",
+  "神奈川県",
+  "新潟県",
+  "富山県",
+  "石川県",
+  "福井県",
+  "山梨県",
+  "長野県",
+  "岐阜県",
+  "静岡県",
+  "愛知県",
+  "三重県",
+  "滋賀県",
+  "京都府",
+  "大阪府",
+  "兵庫県",
+  "奈良県",
+  "和歌山県",
+  "鳥取県",
+  "島根県",
+  "岡山県",
+  "広島県",
+  "山口県",
+  "徳島県",
+  "香川県",
+  "愛媛県",
+  "高知県",
+  "福岡県",
+  "佐賀県",
+  "長崎県",
+  "熊本県",
+  "大分県",
+  "宮崎県",
+  "鹿児島県",
+  "沖縄県",
 ];
 
 const categories = [
-  "カフェ", "レストラン", "ラーメン", "バー", "居酒屋", "焼肉", "寿司",
-  "パン屋", "スイーツ", "雑貨屋", "書店", "アパレル", "美容室", "その他"
+  "カフェ",
+  "レストラン",
+  "ラーメン",
+  "バー",
+  "居酒屋",
+  "焼肉",
+  "寿司",
+  "パン屋",
+  "スイーツ",
+  "雑貨屋",
+  "書店",
+  "アパレル",
+  "美容室",
+  "その他",
 ];
 
 export default function ShopNewPage() {
@@ -51,7 +103,9 @@ export default function ShopNewPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
       setLoadingUser(false);
     };
@@ -60,7 +114,7 @@ export default function ShopNewPage() {
 
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -71,7 +125,9 @@ export default function ShopNewPage() {
     e.preventDefault();
 
     // The user object is already in state, but we re-fetch just to be 100% sure.
-    const { data: { user: submitUser } } = await supabase.auth.getUser();
+    const {
+      data: { user: submitUser },
+    } = await supabase.auth.getUser();
 
     if (!submitUser) {
       setError("ユーザーが認証されていません。再度サインインしてください。");
@@ -85,23 +141,26 @@ export default function ShopNewPage() {
       let photoUrl: string | null = null;
 
       if (photo) {
-        const fileExt = photo.name.split('.').pop();
+        const fileExt = photo.name.split(".").pop();
         const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('shop-photos')
+          .from("shop-photos")
           .upload(fileName, photo);
 
         if (uploadError) {
-          throw new Error(`写真のアップロードに失敗しました: ${uploadError.message}`);
+          throw new Error(
+            `写真のアップロードに失敗しました: ${uploadError.message}`
+          );
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from('shop-photos')
+          .from("shop-photos")
           .getPublicUrl(uploadData.path);
         photoUrl = publicUrlData.publicUrl;
       }
 
-      const businessHours = startTime && endTime ? `${startTime} - ${endTime}` : "";
+      const businessHours =
+        startTime && endTime ? `${startTime} - ${endTime}` : "";
       const shopData = {
         user_id: submitUser.id,
         name,
@@ -114,7 +173,9 @@ export default function ShopNewPage() {
         comments,
       };
 
-      const { error: insertError } = await supabase.from('shops').insert(shopData);
+      const { error: insertError } = await supabase
+        .from("shops")
+        .insert(shopData);
 
       if (insertError) {
         throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
@@ -122,7 +183,6 @@ export default function ShopNewPage() {
 
       alert("投稿が完了しました！");
       router.push("/");
-
     } catch (err: any) {
       setError(err.message);
       console.error(err);
@@ -158,22 +218,49 @@ export default function ShopNewPage() {
         {/* Form inputs... */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="例: Geminiカフェ" required />
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="例: Geminiカフェ"
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
-          <Input id="photo" type="file" onChange={(e) => setPhoto(e.target.files ? e.target.files[0] : null)} accept="image/*" />
+          <Input
+            id="photo"
+            type="file"
+            onChange={(e) =>
+              setPhoto(e.target.files ? e.target.files[0] : null)
+            }
+            accept="image/*"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
-          <Input id="url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com" />
+          <Input
+            id="url"
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
+          />
         </div>
         <div className="space-y-2">
           <Label>営業時間</Label>
           <div className="flex items-center space-x-2">
-            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            <Input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
             <span>-</span>
-            <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            <Input
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
           </div>
         </div>
         <div className="space-y-2">
@@ -184,7 +271,9 @@ export default function ShopNewPage() {
             </SelectTrigger>
             <SelectContent>
               {prefectures.map((pref) => (
-                <SelectItem key={pref} value={pref}>{pref}</SelectItem>
+                <SelectItem key={pref} value={pref}>
+                  {pref}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -197,22 +286,34 @@ export default function ShopNewPage() {
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
-          <Input id="detailedCategory" value={detailedCategory} onChange={(e) => setDetailedCategory(e.target.value)} placeholder="例: スペシャルティコーヒー" />
+          <Input
+            id="detailedCategory"
+            value={detailedCategory}
+            onChange={(e) => setDetailedCategory(e.target.value)}
+            placeholder="例: スペシャルティコーヒー"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="comments">コメント</Label>
-          <Textarea id="comments" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="お店の雰囲気やおすすめメニューなどを記入してください" />
+          <Textarea
+            id="comments"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="お店の雰囲気やおすすめメニューなどを記入してください"
+          />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? '投稿中...' : '投稿する'}
+          {loading ? "投稿中..." : "投稿する"}
         </Button>
       </form>
     </div>

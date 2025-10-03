@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
 
 const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -13,16 +13,20 @@ const Header: React.FC = () => {
   const supabase = useMemo(() => createClient(), []); // Wrap createClient in useMemo
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
       setLoading(false);
     };
 
     getUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -31,7 +35,7 @@ const Header: React.FC = () => {
 
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -39,7 +43,7 @@ const Header: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    if (window.confirm('サインアウトしますか？')) {
+    if (window.confirm("サインアウトしますか？")) {
       await supabase.auth.signOut();
       window.location.reload();
     }
@@ -54,17 +58,25 @@ const Header: React.FC = () => {
         <ul className="flex space-x-4 items-center">
           <li>
             <Link href="/submit-shop">
-              <Button variant="outline" className="text-gray-800">Add Shop</Button>
+              <Button variant="outline" className="text-gray-800">
+                Add Shop
+              </Button>
             </Link>
           </li>
           <li>
             <Link href="/my-page">
-              <Button variant="outline" className="text-gray-800">マイページ</Button>
+              <Button variant="outline" className="text-gray-800">
+                マイページ
+              </Button>
             </Link>
           </li>
           <li>
             {!loading && user ? (
-              <Button onClick={handleSignOut} variant="ghost" className="flex items-center space-x-2">
+              <Button
+                onClick={handleSignOut}
+                variant="ghost"
+                className="flex items-center space-x-2"
+              >
                 {user.user_metadata?.avatar_url && (
                   <Image
                     src={user.user_metadata.avatar_url}

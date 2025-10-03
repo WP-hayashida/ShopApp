@@ -1,22 +1,25 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { createClient } from '@/lib/supabase/client';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
 
 interface ProfileFormProps {
   initialUsername?: string;
   initialAvatarUrl?: string | null;
 }
 
-export const ProfileForm: React.FC<ProfileFormProps> = ({ initialUsername, initialAvatarUrl }) => {
+export const ProfileForm: React.FC<ProfileFormProps> = ({
+  initialUsername,
+  initialAvatarUrl,
+}) => {
   const supabase = createClient();
   const router = useRouter();
-  const [username, setUsername] = useState(initialUsername || '');
-  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl || '');
+  const [username, setUsername] = useState(initialUsername || "");
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -27,31 +30,31 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ initialUsername, initi
     setError(null);
     setSuccess(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      setError('ユーザーが認証されていません。');
+      setError("ユーザーが認証されていません。");
       setLoading(false);
       return;
     }
 
-    const { error: dbError } = await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: user.id,
-          username: username,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' } // Update if id exists, insert if not
-      );
+    const { error: dbError } = await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        username: username,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" } // Update if id exists, insert if not
+    );
 
     if (dbError) {
-      console.error('Error saving profile:', dbError);
-      setError('プロフィールの保存に失敗しました: ' + dbError.message);
+      console.error("Error saving profile:", dbError);
+      setError("プロフィールの保存に失敗しました: " + dbError.message);
     } else {
-      setSuccess('プロフィールが保存されました！');
+      setSuccess("プロフィールが保存されました！");
       // Optionally refresh the page to show updated header info
       router.refresh();
     }
@@ -82,7 +85,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ initialUsername, initi
         />
       </div>
       <Button type="submit" disabled={loading}>
-        {loading ? '保存中...' : 'プロフィールを保存'}
+        {loading ? "保存中..." : "プロフィールを保存"}
       </Button>
     </form>
   );

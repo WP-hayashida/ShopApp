@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -39,7 +39,9 @@ export default function MyPage() {
 
   useEffect(() => {
     const fetchUserAndData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
 
       if (user) {
@@ -56,11 +58,13 @@ export default function MyPage() {
           setProfile(profileData);
         } else {
           // No profile found, create a default one
-          const { error: insertError } = await supabase.from('profiles').insert({
-            id: user.id,
-            username: user.user_metadata?.name || "Unnamed User",
-            avatar_url: user.user_metadata?.avatar_url || null,
-          });
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              username: user.user_metadata?.name || "Unnamed User",
+              avatar_url: user.user_metadata?.avatar_url || null,
+            });
 
           if (insertError) {
             console.error("Error creating default profile:", insertError);
@@ -76,7 +80,7 @@ export default function MyPage() {
         const { data: fetchedShops, error: shopsError } = await supabase
           .from("shops")
           .select("*")
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
 
         if (shopsError) {
           console.error("Error fetching shops for MyPage:", shopsError);
@@ -85,16 +89,19 @@ export default function MyPage() {
         }
 
         // Fetch shops liked by the user
-        const { data: fetchedLikedShops, error: likedShopsError } = await supabase
-          .from('likes')
-          .select('shops(*)') // Select all columns from the joined shops table
-          .eq('user_id', user.id);
+        const { data: fetchedLikedShops, error: likedShopsError } =
+          await supabase
+            .from("likes")
+            .select("shops(*)") // Select all columns from the joined shops table
+            .eq("user_id", user.id);
 
         if (likedShopsError) {
           console.error("Error fetching liked shops:", likedShopsError);
         } else {
           // The result is an array of { shops: Shop } objects, so we map it
-          setLikedShops(fetchedLikedShops?.map(like => like.shops) as Shop[] || []);
+          setLikedShops(
+            (fetchedLikedShops?.map((like) => like.shops) as Shop[]) || []
+          );
         }
       }
       setLoading(false);
@@ -102,11 +109,13 @@ export default function MyPage() {
 
     fetchUserAndData();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      // Re-fetch data on auth change if needed
-      fetchUserAndData();
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        // Re-fetch data on auth change if needed
+        fetchUserAndData();
+      }
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -115,7 +124,7 @@ export default function MyPage() {
 
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
