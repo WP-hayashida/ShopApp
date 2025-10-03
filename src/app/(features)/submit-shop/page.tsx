@@ -86,11 +86,7 @@ export default function ShopNewPage() {
 
       if (photo) {
         const fileExt = photo.name.split('.').pop();
-<<<<<<< HEAD
-        const fileName = `${submitUser.id}-${Date.now()}.${fileExt}`;
-=======
         const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
->>>>>>> feature/like-functionality
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('shop-photos')
           .upload(fileName, photo);
