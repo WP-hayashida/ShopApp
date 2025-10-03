@@ -35,6 +35,10 @@ export default function MyPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [shops, setShops] = useState<Shop[]>([]);
+<<<<<<< HEAD
+=======
+  const [likedShops, setLikedShops] = useState<Shop[]>([]);
+>>>>>>> feature/like-functionality
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -75,13 +79,33 @@ export default function MyPage() {
         const { data: fetchedShops, error: shopsError } = await supabase
           .from("shops")
           .select("*")
+<<<<<<< HEAD
           .eq('user_id', user.id); // Filter by user_id
+=======
+          .eq('user_id', user.id);
+>>>>>>> feature/like-functionality
 
         if (shopsError) {
           console.error("Error fetching shops for MyPage:", shopsError);
         } else {
           setShops((fetchedShops as Shop[]) || []);
         }
+<<<<<<< HEAD
+=======
+
+        // Fetch shops liked by the user
+        const { data: fetchedLikedShops, error: likedShopsError } = await supabase
+          .from('likes')
+          .select('shops(*)') // Select all columns from the joined shops table
+          .eq('user_id', user.id);
+
+        if (likedShopsError) {
+          console.error("Error fetching liked shops:", likedShopsError);
+        } else {
+          // The result is an array of { shops: Shop } objects, so we map it
+          setLikedShops(fetchedLikedShops?.map(like => like.shops) as Shop[] || []);
+        }
+>>>>>>> feature/like-functionality
       }
       setLoading(false);
     };
@@ -129,7 +153,10 @@ export default function MyPage() {
   }
 
   const myPosts = shops;
+<<<<<<< HEAD
   const favoriteShops = []; // TODO: Implement favorites
+=======
+>>>>>>> feature/like-functionality
 
   return (
     <div className="container mx-auto max-w-4xl py-10">
@@ -169,9 +196,9 @@ export default function MyPage() {
       {/* Favorites Section */}
       <section>
         <h2 className="text-2xl font-semibold mb-4">お気に入りのお店</h2>
-        {favoriteShops.length > 0 ? (
+        {likedShops.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {favoriteShops.map((shop) => (
+            {likedShops.map((shop) => (
               <ShopCard key={shop.id} shop={shop} />
             ))}
           </div>

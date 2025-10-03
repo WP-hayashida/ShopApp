@@ -1,5 +1,9 @@
 // src/lib/supabase/server.ts
+<<<<<<< HEAD
 import { createServerClient, type CookieOptions } from ' @supabase/ssr'
+=======
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+>>>>>>> feature/like-functionality
 import { cookies } from 'next/headers'
 import { Database } from '../database.types'
 
@@ -20,7 +24,11 @@ export function createClient() {
           } catch (error) {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
+<<<<<<< HEAD
             // user sessions.
+=======
+            // user sessions. (e.g. `supabase.auth.getSession()`) 
+>>>>>>> feature/like-functionality
           }
         },
         remove(name: string, options: CookieOptions) {
@@ -29,7 +37,11 @@ export function createClient() {
           } catch (error) {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
+<<<<<<< HEAD
             // user sessions.
+=======
+            // user sessions. (e.g. `supabase.auth.getSession()`) 
+>>>>>>> feature/like-functionality
           }
         },
       },

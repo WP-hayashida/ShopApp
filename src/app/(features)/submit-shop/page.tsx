@@ -86,7 +86,11 @@ export default function ShopNewPage() {
 
       if (photo) {
         const fileExt = photo.name.split('.').pop();
+<<<<<<< HEAD
         const fileName = `${submitUser.id}-${Date.now()}.${fileExt}`;
+=======
+        const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
+>>>>>>> feature/like-functionality
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('shop-photos')
           .upload(fileName, photo);
@@ -155,6 +159,7 @@ export default function ShopNewPage() {
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">新しいお店を投稿する</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form inputs... */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
           <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="例: Geminiカフェ" required />

@@ -1,7 +1,13 @@
 'use client';
 
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
+=======
+import React, { useState, useEffect, useMemo } from 'react';
+>>>>>>> feature/like-functionality
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -9,8 +15,12 @@ import type { User } from '@supabase/supabase-js';
 const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const supabase = createClient();
 
+=======
+  const supabase = useMemo(() => createClient(), []); // Wrap createClient in useMemo
+>>>>>>> feature/like-functionality
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -27,7 +37,11 @@ const Header: React.FC = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
+<<<<<<< HEAD
   }, [supabase.auth]);
+=======
+  }, []);
+>>>>>>> feature/like-functionality
 
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
@@ -41,7 +55,10 @@ const Header: React.FC = () => {
   const handleSignOut = async () => {
     if (window.confirm('サインアウトしますか？')) {
       await supabase.auth.signOut();
+<<<<<<< HEAD
       // Refresh the page to reflect the signed-out state
+=======
+>>>>>>> feature/like-functionality
       window.location.reload();
     }
   };
