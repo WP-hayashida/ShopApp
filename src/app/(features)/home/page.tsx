@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ShopList from "@/app/(features)/_components/ShopList";
 import { createClient } from "@/lib/supabase/client";
+import ShopList from "@/app/(features)/_components/ShopList";
 import { Shop } from "@/app/(features)/_lib/types";
 
 export default function HomePage() {
@@ -26,8 +26,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center p-24">
-        <p>お店を読み込み中...</p>
+      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+        <p>読み込み中...</p>
       </main>
     );
   }
