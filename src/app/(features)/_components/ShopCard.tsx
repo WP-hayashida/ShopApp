@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 import { Heart } from "lucide-react"; // Import Heart icon
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -136,7 +137,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           </p>
         </CardDescription>
       </CardContent>
-      <CardFooter className="flex justify-between items-center pb-4 pr-4">
+      <CardFooter className="flex justify-between items-center pb-4 px-4">
         <div className="flex items-center space-x-1">
           <Button
             variant="ghost"
@@ -153,9 +154,9 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           </Button>
           <span className="text-sm text-gray-600">{likeCount}</span>
         </div>
-        <a href={shop.url} target="_blank" rel="noopener noreferrer">
+        <Link href={`/shops/${shop.id}`} passHref>
           <Button variant="outline">詳細を見る</Button>
-        </a>
+        </Link>
       </CardFooter>
     </Card>
   );
