@@ -14,13 +14,19 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
   return (
     <Card className="w-[300px] shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="p-0">
-        <Image
-          src={shop.photo_url}
-          alt={shop.name}
-          width={300}
-          height={200}
-          className="rounded-t-lg object-cover w-full h-48"
-        />
+        {shop.photo_url ? (
+          <Image
+            src={shop.photo_url}
+            alt={shop.name}
+            width={300}
+            height={200}
+            className="rounded-t-lg object-cover w-full h-48"
+          />
+        ) : (
+          <div className="rounded-t-lg bg-gray-200 w-full h-48 flex items-center justify-center">
+            <span className="text-gray-500">No Image</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="pt-4">
         <CardTitle className="text-xl font-semibold mb-2">{shop.name}</CardTitle>
