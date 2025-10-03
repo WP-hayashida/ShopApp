@@ -1,7 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +32,11 @@ const categories = [
 ];
 
 export default function ShopNewPage() {
+  const supabase = createClient();
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [url, setUrl] = useState("");
@@ -40,29 +46,116 @@ export default function ShopNewPage() {
   const [category, setCategory] = useState("");
   const [detailedCategory, setDetailedCategory] = useState("");
   const [comments, setComments] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoadingUser(false);
+    };
+    getUser();
+  }, [supabase.auth]);
+
+  const handleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const businessHours = startTime && endTime ? `${startTime} - ${endTime}` : "";
-    // TODO: Implement submission logic to Supabase
-    console.log({
-      name,
-      photo,
-      url,
-      businessHours,
-      location,
-      category,
-      detailedCategory,
-      comments,
-    });
-    alert("投稿が完了しました！"); // Placeholder
-    router.push("/");
+
+    // The user object is already in state, but we re-fetch just to be 100% sure.
+    const { data: { user: submitUser } } = await supabase.auth.getUser();
+
+    if (!submitUser) {
+      setError("ユーザーが認証されていません。再度サインインしてください。");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      let photoUrl: string | null = null;
+
+      if (photo) {
+        const fileExt = photo.name.split('.').pop();
+        const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('shop-photos')
+          .upload(fileName, photo);
+
+        if (uploadError) {
+          throw new Error(`写真のアップロードに失敗しました: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('shop-photos')
+          .getPublicUrl(uploadData.path);
+        photoUrl = publicUrlData.publicUrl;
+      }
+
+      const businessHours = startTime && endTime ? `${startTime} - ${endTime}` : "";
+      const shopData = {
+        user_id: submitUser.id,
+        name,
+        photo_url: photoUrl,
+        url,
+        business_hours: businessHours,
+        location,
+        category,
+        detailed_category: detailedCategory,
+        comments,
+      };
+
+      const { error: insertError } = await supabase.from('shops').insert(shopData);
+
+      if (insertError) {
+        throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
+      }
+
+      alert("投稿が完了しました！");
+      router.push("/");
+
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loadingUser) {
+    return (
+      <div className="container mx-auto max-w-2xl py-10 text-center">
+        <p>読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto max-w-2xl py-10 text-center">
+        <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
+        <p>お店を投稿するにはサインインが必要です。</p>
+        <Button onClick={handleSignIn} className="mt-4">
+          Googleでサインイン
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">新しいお店を投稿する</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form inputs... */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
           <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="例: Geminiカフェ" required />
@@ -117,7 +210,10 @@ export default function ShopNewPage() {
           <Label htmlFor="comments">コメント</Label>
           <Textarea id="comments" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="お店の雰囲気やおすすめメニューなどを記入してください" />
         </div>
-        <Button type="submit" className="w-full">投稿する</Button>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? '投稿中...' : '投稿する'}
+        </Button>
       </form>
     </div>
   );
