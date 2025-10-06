@@ -44,7 +44,7 @@ const Header: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    if (window.confirm('サインアウトしますか？')) {
+    if (window.confirm('Are you sure you want to sign out?')) {
       await supabase.auth.signOut();
       // Refresh the page to reflect the signed-out state
       window.location.reload();
@@ -52,24 +52,25 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
-      <Link href="/" className="text-2xl font-bold text-gray-800">
+    <header className="bg-gray-900 text-gray-100 shadow-md py-4 px-6 flex justify-between items-center">
+      <Link href="/" className="text-2xl font-bold text-white">
         ShopShare
       </Link>
       <nav>
-        <ul className="flex space-x-4 items-center">
+        <ul className="flex space-x-2 items-center">
+          <li>
+            <Link href="/">
+              <Button variant="ghost">Home</Button>
+            </Link>
+          </li>
           <li>
             <Link href="/submit-shop">
-              <Button variant="outline" className="text-gray-800">
-                Add Shop
-              </Button>
+              <Button variant="ghost">Add Shop</Button>
             </Link>
           </li>
           <li>
             <Link href="/my-page">
-              <Button variant="outline" className="text-gray-800">
-                マイページ
-              </Button>
+              <Button variant="ghost">My Page</Button>
             </Link>
           </li>
           <li>

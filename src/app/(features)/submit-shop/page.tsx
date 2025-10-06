@@ -134,6 +134,13 @@ export default function ShopNewPage() {
     }
   };
 
+  // Prevent form submission on Enter key press in input fields
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+      e.preventDefault();
+    }
+  };
+
   if (loadingUser) {
     return (
       <div className="container mx-auto max-w-2xl py-10 text-center">
@@ -157,7 +164,7 @@ export default function ShopNewPage() {
   return (
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">新しいお店を投稿する</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
         {/* Form inputs... */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
