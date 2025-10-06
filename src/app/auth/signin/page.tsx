@@ -1,10 +1,20 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SignInPage() {
+  const handleSignIn = async () => {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    });
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <Card className="w-[350px]">
@@ -13,7 +23,7 @@ export default function SignInPage() {
           <CardDescription>Sign in to your account to continue.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => signIn('google')} className="w-full">
+          <Button onClick={handleSignIn} className="w-full">
             Sign in with Google
           </Button>
         </CardContent>

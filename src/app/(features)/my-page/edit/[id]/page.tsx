@@ -80,18 +80,18 @@ export default function EditShopPage() {
       }
 
       // Pre-fill form with existing data
-      setName(shopData.name);
+      setName(shopData.name ?? "");
       setInitialPhotoUrl(shopData.photo_url);
-      setUrl(shopData.url);
+      setUrl(shopData.url ?? "");
       if (shopData.business_hours) {
         const [start, end] = shopData.business_hours.split(" - ");
         setStartTime(start || "");
         setEndTime(end || "");
       }
-      setLocation(shopData.location);
-      setCategory(shopData.category);
-      setDetailedCategory(shopData.detailed_category);
-      setComments(shopData.comments);
+      setLocation(shopData.location ?? prefectures[12]);
+      setCategory(shopData.category ?? "");
+      setDetailedCategory(shopData.detailed_category ?? "");
+      setComments(shopData.comments ?? "");
 
       setLoadingUser(false);
     };
