@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
@@ -13,15 +13,16 @@ import {
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react"; // Import Heart icon
+import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface ShopCardProps {
   shop: Shop;
+  editHref?: string; // Optional prop for the edit link
 }
 
-const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
+const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [isLiked, setIsLiked] = useState(false);
@@ -36,19 +37,19 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
       } = await supabase.auth.getUser();
       setUser(user);
 
+      // Fetch like count for this shop
+      const { count, error: countError } = await supabase
+        .from("likes")
+        .select("id", { count: "exact" })
+        .eq("shop_id", shop.id);
+
+      if (countError) {
+        console.error("Error fetching like count:", countError);
+      } else {
+        setLikeCount(count || 0);
+      }
+
       if (user) {
-        // Fetch like count for this shop
-        const { count, error: countError } = await supabase
-          .from("likes")
-          .select("id", { count: "exact" })
-          .eq("shop_id", shop.id);
-
-        if (countError) {
-          console.error("Error fetching like count:", countError);
-        } else {
-          setLikeCount(count || 0);
-        }
-
         // Check if current user liked this shop
         const { data, error } = await supabase
           .from("likes")
@@ -67,7 +68,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
     };
 
     checkLikeStatus();
-  }, [shop.id, supabase.auth]);
+  }, [shop.id, supabase]);
 
   const handleLikeToggle = async () => {
     if (!user) {
@@ -108,7 +109,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
   };
 
   return (
-    <Card className="w-[300px] shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="w-full shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="p-0">
         {shop.photo_url ? (
           <Image
@@ -124,7 +125,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           </div>
         )}
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="pt-4 flex-grow">
         <CardTitle className="text-xl font-semibold mb-2">
           {shop.name}
         </CardTitle>
@@ -137,26 +138,28 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           </p>
         </CardDescription>
       </CardContent>
-      <CardFooter className="flex justify-between items-center pb-4 px-4">
+      <CardFooter className="flex justify-between items-center pb-4 px-4 mt-auto">
         <div className="flex items-center space-x-1">
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLikeToggle}
             disabled={loadingLike}
-            className={
-              isLiked
-                ? "text-red-500 hover:text-red-600"
-                : "text-gray-400 hover:text-gray-500"
-            }
+            className={isLiked ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-500"}
           >
             <Heart fill={isLiked ? "currentColor" : "none"} />
           </Button>
           <span className="text-sm text-gray-600">{likeCount}</span>
         </div>
-        <Link href={`/shops/${shop.id}`} passHref>
-          <Button variant="outline">詳細を見る</Button>
-        </Link>
+        {editHref ? (
+          <Link href={editHref} passHref>
+            <Button variant="secondary" className="transition-transform hover:scale-105 active:scale-95">編集する</Button>
+          </Link>
+        ) : (
+          <Link href={`/shops/${shop.id}`} passHref>
+            <Button variant="outline">詳細を見る</Button>
+          </Link>
+        )}
       </CardFooter>
     </Card>
   );
