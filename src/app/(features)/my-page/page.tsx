@@ -10,21 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
 import Link from "next/link";
 
-// MyPostCard component to wrap ShopCard and add edit/delete buttons
-const MyPostCard: React.FC<{ shop: Shop }> = ({ shop }) => {
-  return (
-    <div className="relative">
-      <ShopCard shop={shop} />
-      <div className="absolute top-2 right-2 flex space-x-2">
-        <Link href={`/my-page/edit/${shop.id}`} passHref>
-          <Button variant="secondary" size="sm">
-            編集
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-};
+
 
 export default function MyPage() {
   const supabase = createClient();
@@ -169,7 +155,7 @@ export default function MyPage() {
         {myPosts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {myPosts.map((shop) => (
-              <MyPostCard key={shop.id} shop={shop} />
+              <ShopCard key={shop.id} shop={shop} editHref={`/my-page/edit/${shop.id}`} />
             ))}
           </div>
         ) : (
