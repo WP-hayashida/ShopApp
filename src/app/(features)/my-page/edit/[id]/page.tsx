@@ -98,6 +98,15 @@ export default function EditShopPage() {
     getUserAndShop();
   }, [supabase, shopId]);
 
+  const handleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
       e.preventDefault();
