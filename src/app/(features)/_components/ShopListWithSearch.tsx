@@ -13,10 +13,10 @@ const initialFilters: SearchFilters = {
   keyword: "",
   location: "",
   category: "",
-  sortBy: "",
+  sortBy: "created_at.desc",
 };
 
-export default function HomePage() {
+export default function ShopListWithSearch() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
@@ -52,11 +52,8 @@ export default function HomePage() {
           query = query.eq("category", category);
         }
 
-        const [field, order] = sortBy.split('.');
-        // sortBy が空文字列の場合はデフォルトで created_at.desc を使用
-        const actualField = field || "created_at";
-        const actualOrder = order || "desc";
-        query = query.order(actualField, { ascending: actualOrder === 'asc' });
+        const [field, order] = sortBy.split(".");
+        query = query.order(field, { ascending: order === "asc" });
       }
 
       const { data, error } = await query;
@@ -75,21 +72,16 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+      <div className="flex items-center justify-center h-full w-full">
         <p>お店を読み込み中...</p>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col p-24">
-      <div className="flex items-center justify-center w-full relative mb-4">
-        <h1 className="text-3xl font-bold">Our Shops</h1>
-        <div className="absolute right-0 top-0">
-          <SearchControls initialFilters={filters} onSearch={setFilters} />
-        </div>
-      </div>
+    <div className="flex flex-col items-end w-full h-full">
+      <SearchControls initialFilters={filters} onSearch={setFilters} />
       <ShopList shops={shops} />
-    </main>
+    </div>
   );
 }
