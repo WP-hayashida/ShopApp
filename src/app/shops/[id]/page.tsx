@@ -39,9 +39,13 @@ export default function ShopDetailPage() {
         } else {
           setError('お探しのショップは見つかりませんでした。');
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching shop:', err);
-        setError(err.message || 'ショップの読み込み中にエラーが発生しました。');
+        let message = 'ショップの読み込み中にエラーが発生しました。';
+        if (err instanceof Error) {
+          message = err.message;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }

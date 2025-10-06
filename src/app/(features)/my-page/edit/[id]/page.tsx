@@ -160,10 +160,12 @@ export default function EditShopPage() {
         throw new Error(`投稿の更新に失敗しました: ${updateError.message}`);
       }
 
-      alert("投稿が更新されました！");
-      router.push("/my-page");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      let message = '投稿の更新中にエラーが発生しました。';
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
       console.error(err);
     } finally {
       setLoading(false);
@@ -214,8 +216,12 @@ export default function EditShopPage() {
 
       alert("投稿が削除されました。");
       router.push("/my-page");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      let message = '投稿の削除中にエラーが発生しました。';
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
       console.error(err);
     } finally {
       setLoading(false);
