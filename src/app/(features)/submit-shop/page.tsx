@@ -182,8 +182,12 @@ export default function ShopNewPage() {
 
       alert("投稿が完了しました！");
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      let message = "投稿中にエラーが発生しました。";
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
       console.error(err);
     } finally {
       setLoading(false);

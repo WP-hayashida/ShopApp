@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function AuthCodeError() {
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
@@ -6,7 +8,7 @@ export default function AuthCodeError() {
       <p>
         Please try signing in again. If the problem persists, contact support.
       </p>
-      <a href="/">Go to Home Page</a>
+      <Link href="/" className="text-blue-600 hover:underline">Go to Home Page</Link>
     </div>
   );
 }
