@@ -10,7 +10,8 @@ import { Separator } from '@/components/ui/separator';
 
 export default function ShopDetailPage() {
   const params = useParams();
-  const { id } = params;
+  // id can be string | string[] | undefined. Ensure it's a single string.
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const supabase = createClient();
 
   const [shop, setShop] = useState<Shop | null>(null);

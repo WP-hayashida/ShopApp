@@ -8,6 +8,7 @@ import ShopCard from "@/app/(features)/_components/ShopCard";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
+import Link from "next/link";
 
 // MyPostCard component to wrap ShopCard and add edit/delete buttons
 const MyPostCard: React.FC<{ shop: Shop }> = ({ shop }) => {
@@ -15,12 +16,11 @@ const MyPostCard: React.FC<{ shop: Shop }> = ({ shop }) => {
     <div className="relative">
       <ShopCard shop={shop} />
       <div className="absolute top-2 right-2 flex space-x-2">
-        <Button variant="secondary" size="sm">
-          編集
-        </Button>
-        <Button variant="destructive" size="sm">
-          削除
-        </Button>
+        <Link href={`/my-page/edit/${shop.id}`} passHref>
+          <Button variant="secondary" size="sm">
+            編集
+          </Button>
+        </Link>
       </div>
     </div>
   );
