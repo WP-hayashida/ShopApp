@@ -1,14 +1,18 @@
 import Link from 'next/link';
 
+/**
+ * 認証エラーページコンポーネント
+ * 認証コードの交換に失敗した場合に表示されます。
+ */
 export default function AuthCodeError() {
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>Authentication Error</h1>
-      <p>Could not exchange the authentication code for a session.</p>
+      <h1>認証エラー</h1>
+      <p>セッションの取得に失敗しました。</p>
       <p>
-        Please try signing in again. If the problem persists, contact support.
+        お手数ですが、再度サインインをお試しください。
       </p>
-      <Link href="/" className="text-blue-600 hover:underline">Go to Home Page</Link>
+      <Link href="/" className="text-blue-600 hover:underline">トップページに戻る</Link>
     </div>
   );
 }

@@ -5,6 +5,10 @@ import * as SeparatorPrimitive from "@radix-ui/react-separator";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 再利用可能なSeparatorコンポーネント
+ * Radix UIのSeparatorをベースにスタイルを適用します。
+ */
 function Separator({
   className,
   orientation = "horizontal",

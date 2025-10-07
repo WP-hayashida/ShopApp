@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+// 定数：都道府県リスト
 const prefectures = [
   "北海道",
   "青森県",
@@ -66,6 +67,7 @@ const prefectures = [
   "沖縄県",
 ];
 
+// 定数：カテゴリリスト
 const categories = [
   "カフェ",
   "レストラン",
@@ -83,24 +85,30 @@ const categories = [
   "その他",
 ];
 
+/**
+ * 新しいお店を投稿するページコンポーネント
+ */
 export default function ShopNewPage() {
   const supabase = createClient();
   const router = useRouter();
+  // ステート変数の定義
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  // フォームの各フィールドのステート
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [location, setLocation] = useState(prefectures[12]); // Default to Tokyo
+  const [location, setLocation] = useState(prefectures[12]); // デフォルトを東京に設定
   const [category, setCategory] = useState("");
   const [detailedCategory, setDetailedCategory] = useState("");
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 副作用フック：ユーザー情報を取得
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -112,6 +120,7 @@ export default function ShopNewPage() {
     getUser();
   }, [supabase.auth]);
 
+  // サインイン処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -121,6 +130,7 @@ export default function ShopNewPage() {
     });
   };
 
+  // フォーム送信処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -139,6 +149,7 @@ export default function ShopNewPage() {
     try {
       let photoUrl: string | null = null;
 
+      // 写真が選択されている場合、Supabase Storageにアップロード
       if (photo) {
         const fileExt = photo.name.split(".").pop();
         const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
@@ -152,14 +163,18 @@ export default function ShopNewPage() {
           );
         }
 
+        // アップロードした写真の公開URLを取得
         const { data: publicUrlData } = supabase.storage
           .from("shop-photos")
           .getPublicUrl(uploadData.path);
         photoUrl = publicUrlData.publicUrl;
       }
 
+      // 営業時間を整形
       const businessHours =
         startTime && endTime ? `${startTime} - ${endTime}` : "";
+      
+      // データベースに保存する店舗データを作成
       const shopData = {
         user_id: submitUser.id,
         name,
@@ -172,6 +187,7 @@ export default function ShopNewPage() {
         comments,
       };
 
+      // `shops`テーブルにデータを挿入
       const { error: insertError } = await supabase
         .from("shops")
         .insert(shopData);
@@ -181,7 +197,7 @@ export default function ShopNewPage() {
       }
 
       alert("投稿が完了しました！");
-      router.push("/");
+      router.push("/"); // ホームページにリダイレクト
     } catch (err) {
       let message = "投稿中にエラーが発生しました。";
       if (err instanceof Error) {
@@ -194,13 +210,14 @@ export default function ShopNewPage() {
     }
   };
 
-  // Prevent form submission on Enter key press in input fields
+  // 入力フィールドでEnterキーが押されたときにフォームが送信されるのを防ぐ
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
       e.preventDefault();
     }
   };
 
+  // ユーザー情報読み込み中の表示
   if (loadingUser) {
     return (
       <div className="container mx-auto max-w-2xl py-10 text-center">
@@ -209,6 +226,7 @@ export default function ShopNewPage() {
     );
   }
 
+  // 未ログイン時の表示
   if (!user) {
     return (
       <div className="container mx-auto max-w-2xl py-10 text-center">
@@ -221,6 +239,7 @@ export default function ShopNewPage() {
     );
   }
 
+  // メインのフォーム表示
   return (
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">新しいお店を投稿する</h1>
@@ -229,7 +248,7 @@ export default function ShopNewPage() {
         onKeyDown={handleKeyDown}
         className="space-y-6"
       >
-        {/* Form inputs... */}
+        {/* 店舗名 */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
           <Input
@@ -240,6 +259,7 @@ export default function ShopNewPage() {
             required
           />
         </div>
+        {/* 写真 */}
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
           <Input
@@ -251,6 +271,7 @@ export default function ShopNewPage() {
             accept="image/*"
           />
         </div>
+        {/* URL */}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <Input
@@ -261,6 +282,7 @@ export default function ShopNewPage() {
             placeholder="https://example.com"
           />
         </div>
+        {/* 営業時間 */}
         <div className="space-y-2">
           <Label>営業時間</Label>
           <div className="flex items-center space-x-2">
@@ -277,6 +299,7 @@ export default function ShopNewPage() {
             />
           </div>
         </div>
+        {/* 場所 */}
         <div className="space-y-2">
           <Label htmlFor="location">場所</Label>
           <Select onValueChange={setLocation} defaultValue={location}>
@@ -292,6 +315,7 @@ export default function ShopNewPage() {
             </SelectContent>
           </Select>
         </div>
+        {/* カテゴリ */}
         <div className="space-y-2">
           <Label htmlFor="category">カテゴリ</Label>
           <Select onValueChange={setCategory} value={category}>
@@ -307,6 +331,7 @@ export default function ShopNewPage() {
             </SelectContent>
           </Select>
         </div>
+        {/* 詳細カテゴリ */}
         <div className="space-y-2">
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
           <Input
@@ -316,6 +341,7 @@ export default function ShopNewPage() {
             placeholder="例: スペシャルティコーヒー"
           />
         </div>
+        {/* コメント */}
         <div className="space-y-2">
           <Label htmlFor="comments">コメント</Label>
           <Textarea

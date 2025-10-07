@@ -5,30 +5,35 @@ import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
 
+// Drawerコンポーネントのルート要素
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />
 }
 
+// Drawerを開くためのトリガー
 function DrawerTrigger({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Trigger>) {
   return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />
 }
 
+// Drawerをポータルにレンダリングするためのコンポーネント
 function DrawerPortal({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Portal>) {
   return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />
 }
 
+// Drawerを閉じるためのトリガー
 function DrawerClose({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Close>) {
   return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />
 }
 
+// Drawerのオーバーレイ（背景）
 function DrawerOverlay({
   className,
   ...props
@@ -45,6 +50,7 @@ function DrawerOverlay({
   )
 }
 
+// Drawerのコンテンツ部分
 function DrawerContent({
   className,
   children,
@@ -68,6 +74,7 @@ function DrawerContent({
   )
 }
 
+// Drawerのヘッダー
 function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -81,6 +88,7 @@ function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// Drawerのフッター
 function DrawerFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -91,6 +99,7 @@ function DrawerFooter({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// Drawerのタイトル
 function DrawerTitle({
   className,
   ...props
@@ -104,6 +113,7 @@ function DrawerTitle({
   )
 }
 
+// Drawerの説明文
 function DrawerDescription({
   className,
   ...props

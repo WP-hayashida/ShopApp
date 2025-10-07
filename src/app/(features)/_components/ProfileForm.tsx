@@ -7,29 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
+// ProfileFormコンポーネントのプロパティ型定義
 interface ProfileFormProps {
-  initialUsername?: string;
-  initialAvatarUrl?: string | null;
+  initialUsername?: string; // 初期のユーザー名
+  initialAvatarUrl?: string | null; // 初期のアバターURL
 }
 
+/**
+ * ユーザープロフィールを編集・更新するためのフォームコンポーネント
+ */
 export const ProfileForm: React.FC<ProfileFormProps> = ({
   initialUsername,
   initialAvatarUrl,
 }) => {
   const supabase = createClient();
   const router = useRouter();
+  // ステート変数の定義
   const [username, setUsername] = useState(initialUsername || "");
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // フォームの送信処理
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
 
+    // 現在のユーザーを取得
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -40,6 +47,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       return;
     }
 
+    // プロフィール情報を更新または挿入（upsert）
     const { error: dbError } = await supabase.from("profiles").upsert(
       {
         id: user.id,
@@ -47,7 +55,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "id" } // Update if id exists, insert if not
+      { onConflict: "id" } // idが競合した場合は更新
     );
 
     if (dbError) {
@@ -55,7 +63,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       setError("プロフィールの保存に失敗しました: " + dbError.message);
     } else {
       setSuccess("プロフィールが保存されました！");
-      // Optionally refresh the page to show updated header info
+      // ヘッダーなどの情報を更新するためにページをリフレッシュ
       router.refresh();
     }
     setLoading(false);
