@@ -8,4 +8,5 @@ export interface Shop {
   category: string;
   detailed_category: string;
   comments: string;
+  like_count?: number;
 }
