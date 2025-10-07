@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Shop } from "@/app/(features)/_lib/types";
 
+// 定数：都道府県リスト
 const prefectures = [
   "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
   "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
@@ -28,33 +28,40 @@ const prefectures = [
   "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"
 ];
 
+// 定数：カテゴリリスト
 const categories = [
   "カフェ", "レストラン", "ラーメン", "バー", "居酒屋", "焼肉", "寿司",
   "パン屋", "スイーツ", "雑貨屋", "書店", "アパレル", "美容室", "その他"
 ];
 
+/**
+ * 投稿したお店の情報を編集するページコンポーネント
+ */
 export default function EditShopPage() {
   const supabase = createClient();
   const router = useRouter();
   const params = useParams();
-  const shopId = params.id as string;
+  const shopId = params.id as string; // URLから店舗IDを取得
 
+  // ステート変数の定義
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [initialPhotoUrl, setInitialPhotoUrl] = useState<string | null>(null);
 
+  // フォームの各フィールドのステート
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [location, setLocation] = useState(prefectures[12]); // Default to Tokyo
+  const [location, setLocation] = useState(prefectures[12]); // デフォルトは東京
   const [category, setCategory] = useState("");
   const [detailedCategory, setDetailedCategory] = useState("");
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 副作用フック：ユーザーと既存の店舗情報を取得してフォームに設定
   useEffect(() => {
     const getUserAndShop = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,7 +72,7 @@ export default function EditShopPage() {
         return;
       }
 
-      // Fetch existing shop data
+      // 既存の店舗データを取得
       const { data: shopData, error: fetchError } = await supabase
         .from("shops")
         .select("*")
@@ -79,7 +86,7 @@ export default function EditShopPage() {
         return;
       }
 
-      // Pre-fill form with existing data
+      // フォームに既存のデータを設定
       setName(shopData.name ?? "");
       setInitialPhotoUrl(shopData.photo_url);
       setUrl(shopData.url ?? "");
@@ -98,6 +105,7 @@ export default function EditShopPage() {
     getUserAndShop();
   }, [supabase, shopId]);
 
+  // サインイン処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -107,12 +115,14 @@ export default function EditShopPage() {
     });
   };
 
+  // 入力フィールドでEnterキーが押されたときにフォームが送信されるのを防ぐ
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
       e.preventDefault();
     }
   };
 
+  // フォーム送信（更新）処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -127,8 +137,8 @@ export default function EditShopPage() {
     try {
       let photoUrl: string | null = initialPhotoUrl;
 
+      // 新しい写真が選択された場合、アップロード処理を行う
       if (photo) {
-        // If a new photo is selected, upload it
         const fileExt = photo.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -149,6 +159,8 @@ export default function EditShopPage() {
 
       const businessHours =
         startTime && endTime ? `${startTime} - ${endTime}` : "";
+      
+      // 更新する店舗データを作成
       const shopData = {
         name,
         photo_url: photoUrl,
@@ -160,6 +172,7 @@ export default function EditShopPage() {
         comments,
       };
 
+      // `shops`テーブルのデータを更新
       const { error: updateError } = await supabase
         .from('shops')
         .update(shopData)
@@ -181,6 +194,7 @@ export default function EditShopPage() {
     }
   };
 
+  // ユーザー情報読み込み中の表示
   if (loadingUser) {
     return (
       <div className="container mx-auto max-w-2xl py-10 text-center">
@@ -189,6 +203,7 @@ export default function EditShopPage() {
     );
   }
 
+  // 未ログイン時の表示
   if (!user) {
     return (
       <div className="container mx-auto max-w-2xl py-10 text-center">
@@ -201,6 +216,7 @@ export default function EditShopPage() {
     );
   }
 
+  // 投稿の削除処理
   const handleDelete = async () => {
     if (!user) {
       alert("ユーザーが認証されていません。");
@@ -224,7 +240,7 @@ export default function EditShopPage() {
       }
 
       alert("投稿が削除されました。");
-      router.push("/my-page");
+      router.push("/my-page"); // マイページにリダイレクト
     } catch (err) {
       let message = '投稿の削除中にエラーが発生しました。';
       if (err instanceof Error) {
@@ -237,11 +253,12 @@ export default function EditShopPage() {
     }
   };
 
+  // メインのフォーム表示
   return (
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">ショップを編集</h1>
       <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
-        {/* Form inputs... */}
+        {/* 店舗名 */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
           <Input
@@ -252,6 +269,7 @@ export default function EditShopPage() {
             required
           />
         </div>
+        {/* 写真 */}
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
           {initialPhotoUrl && !photo && (
@@ -268,6 +286,7 @@ export default function EditShopPage() {
             accept="image/*"
           />
         </div>
+        {/* URL */}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <Input
@@ -278,6 +297,7 @@ export default function EditShopPage() {
             placeholder="https://example.com"
           />
         </div>
+        {/* 営業時間 */}
         <div className="space-y-2">
           <Label>営業時間</Label>
           <div className="flex items-center space-x-2">
@@ -294,6 +314,7 @@ export default function EditShopPage() {
             />
           </div>
         </div>
+        {/* 場所 */}
         <div className="space-y-2">
           <Label htmlFor="location">場所</Label>
           <Select onValueChange={setLocation} value={location}>
@@ -309,6 +330,7 @@ export default function EditShopPage() {
             </SelectContent>
           </Select>
         </div>
+        {/* カテゴリ */}
         <div className="space-y-2">
           <Label htmlFor="category">カテゴリ</Label>
           <Select onValueChange={setCategory} value={category}>
@@ -324,6 +346,7 @@ export default function EditShopPage() {
             </SelectContent>
           </Select>
         </div>
+        {/* 詳細カテゴリ */}
         <div className="space-y-2">
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
           <Input
@@ -333,6 +356,7 @@ export default function EditShopPage() {
             placeholder="例: スペシャルティコーヒー"
           />
         </div>
+        {/* コメント */}
         <div className="space-y-2">
           <Label htmlFor="comments">コメント</Label>
           <Textarea
@@ -350,6 +374,7 @@ export default function EditShopPage() {
 
       <Separator className="my-8" />
 
+      {/* 危険な操作ゾーン */}
       <section>
         <h2 className="text-2xl font-bold text-red-600 mb-4">危険な操作</h2>
         <p className="text-gray-700 mb-4">このショップの投稿を完全に削除します。この操作は元に戻せません。</p>

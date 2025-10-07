@@ -9,26 +9,33 @@ import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
 import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-
-
+/**
+ * マイページコンポーネント
+ * ユーザーのプロフィール、投稿したお店、お気に入りのお店をタブで表示します。
+ */
 export default function MyPage() {
+  // Supabaseクライアントの初期化
   const supabase = createClient();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{
+
+  // ステート変数の定義
+  const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
+  const [profile, setProfile] = useState<{ // ユーザープロフィール
     username: string;
     avatar_url: string | null;
   } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [likedShops, setLikedShops] = useState<Shop[]>([]);
+  const [loading, setLoading] = useState(true); // ローディング状態
+  const [shops, setShops] = useState<Shop[]>([]); // ユーザーが投稿したお店のリスト
+  const [likedShops, setLikedShops] = useState<Shop[]>([]); // ユーザーがお気に入りしたお店のリスト
 
+  // 副作用フック：ユーザー情報と関連データの取得
   useEffect(() => {
     const fetchUserAndData = async () => {
+      // ユーザー情報を取得
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
 
       if (user) {
-        // Fetch profile
+        // プロフィール情報を取得
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("username, avatar_url")
@@ -40,7 +47,7 @@ export default function MyPage() {
         } else if (profileData) {
           setProfile(profileData);
         } else {
-          // No profile found, create a default one
+          // プロフィールが存在しない場合、デフォルトのプロフィールを作成
           const { error: insertError } = await supabase.from('profiles').insert({
             id: user.id,
             username: user.user_metadata?.name || "Unnamed User",
@@ -57,7 +64,7 @@ export default function MyPage() {
           }
         }
 
-        // Fetch shops posted by the user
+        // ユーザーが投稿したお店の情報を取得
         const { data: fetchedShops, error: shopsError } = await supabase
           .from("shops")
           .select("*")
@@ -69,16 +76,16 @@ export default function MyPage() {
           setShops((fetchedShops as Shop[]) || []);
         }
 
-        // Fetch shops liked by the user
+        // ユーザーがお気に入りしたお店の情報を取得
         const { data: fetchedLikedShops, error: likedShopsError } = await supabase
           .from('likes')
-          .select('shops(*)') // Select all columns from the joined shops table
+          .select('shops(*)') // 関連するshopsテーブルの全カラムを選択
           .eq('user_id', user.id);
 
         if (likedShopsError) {
           console.error("Error fetching liked shops:", likedShopsError);
         } else {
-          // The result is an array of { shops: Shop } objects, so we map it
+          // 結果は { shops: Shop } の配列なので、mapでShopの配列に変換
           setLikedShops(fetchedLikedShops?.map(like => like.shops) as Shop[] || []);
         }
       }
@@ -87,17 +94,20 @@ export default function MyPage() {
 
     fetchUserAndData();
 
+    // 認証状態の変更を監視
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      // Re-fetch data on auth change if needed
+      // 認証状態が変わったらデータを再取得
       fetchUserAndData();
     });
 
+    // クリーンアップ関数：リスナーを解除
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, [supabase]);
 
+  // Googleでサインインする処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -107,6 +117,7 @@ export default function MyPage() {
     });
   };
 
+  // ローディング中の表示
   if (loading) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -115,6 +126,7 @@ export default function MyPage() {
     );
   }
 
+  // 未ログイン時の表示
   if (!user) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -129,6 +141,7 @@ export default function MyPage() {
 
   const myPosts = shops;
 
+  // ログイン後の表示
   return (
     <div className="container mx-auto max-w-4xl py-10">
       <h1 className="text-3xl font-bold mb-8">マイページ</h1>
@@ -139,6 +152,7 @@ export default function MyPage() {
           <TabsTrigger value="posts">投稿したお店</TabsTrigger>
           <TabsTrigger value="favorites">お気に入りのお店</TabsTrigger>
         </TabsList>
+        {/* プロフィールタブ */}
         <TabsContent value="profile">
           <section className="mt-8">
             {profile ? (
@@ -151,6 +165,7 @@ export default function MyPage() {
             )}
           </section>
         </TabsContent>
+        {/* 投稿したお店タブ */}
         <TabsContent value="posts">
           <section className="mt-8">
             {myPosts.length > 0 ? (
@@ -160,6 +175,7 @@ export default function MyPage() {
             )}
           </section>
         </TabsContent>
+        {/* お気に入りのお店タブ */}
         <TabsContent value="favorites">
           <section className="mt-8">
             {likedShops.length > 0 ? (

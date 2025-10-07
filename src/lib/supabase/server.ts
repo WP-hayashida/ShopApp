@@ -3,9 +3,12 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Database } from "../database.types";
 
-// Make the function async
+/**
+ * サーバーサイド用のSupabaseクライアントを作成する非同期関数
+ * サーバーコンポーネントやAPIルートで使用し、クッキーの管理も行います。
+ */
 export async function createClient() {
-  // Await the cookies() call
+  // cookies()の呼び出しを待機
   const cookieStore = await cookies();
 
   return createServerClient<Database>(

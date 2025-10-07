@@ -6,24 +6,28 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// Selectコンポーネントのルート要素
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
 }
 
+// Selectオプションのグループ化
 function SelectGroup({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Group>) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />;
 }
 
+// 選択された値を表示する
 function SelectValue({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
+// Selectのトリガーとなるボタン
 function SelectTrigger({
   className,
   size = "default",
@@ -50,6 +54,7 @@ function SelectTrigger({
   );
 }
 
+// Selectのコンテンツ（ドロップダウン部分）
 function SelectContent({
   className,
   children,
@@ -85,6 +90,7 @@ function SelectContent({
   );
 }
 
+// Select内のラベル
 function SelectLabel({
   className,
   ...props
@@ -98,6 +104,7 @@ function SelectLabel({
   );
 }
 
+// Selectの各選択肢
 function SelectItem({
   className,
   children,
@@ -122,6 +129,7 @@ function SelectItem({
   );
 }
 
+// Select内の区切り線
 function SelectSeparator({
   className,
   ...props
@@ -135,6 +143,7 @@ function SelectSeparator({
   );
 }
 
+// 上にスクロールするためのボタン
 function SelectScrollUpButton({
   className,
   ...props
@@ -153,6 +162,7 @@ function SelectScrollUpButton({
   );
 }
 
+// 下にスクロールするためのボタン
 function SelectScrollDownButton({
   className,
   ...props

@@ -2,6 +2,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 再利用可能なInputコンポーネント
+ * 標準のinput要素にスタイルを適用します。
+ */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input
