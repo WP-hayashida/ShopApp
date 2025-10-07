@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
+import {
+  House,
+  SquarePen,
+  SquareUser,
+  SquareUserRound,
+  UserRoundPlus,
+} from "lucide-react";
 
 /**
  * ヘッダーコンポーネント
@@ -45,7 +52,7 @@ const Header: React.FC = () => {
   // サインイン処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -54,7 +61,7 @@ const Header: React.FC = () => {
 
   // サインアウト処理
   const handleSignOut = async () => {
-    if (window.confirm('本当にサインアウトしますか？')) {
+    if (window.confirm("本当にサインアウトしますか？")) {
       await supabase.auth.signOut();
       // サインアウト状態を反映するためにページをリロード
       window.location.reload();
@@ -70,17 +77,26 @@ const Header: React.FC = () => {
         <ul className="flex space-x-2 items-center">
           <li>
             <Link href="/">
-              <Button variant="ghost">Home</Button>
+              <Button variant="ghost">
+                <House />
+                Home
+              </Button>
             </Link>
           </li>
           <li>
             <Link href="/submit-shop">
-              <Button variant="ghost">Add Shop</Button>
+              <Button variant="ghost">
+                <SquarePen />
+                Post
+              </Button>
             </Link>
           </li>
           <li>
             <Link href="/my-page">
-              <Button variant="ghost">My Page</Button>
+              <Button variant="ghost">
+                <SquareUserRound />
+                MyPage
+              </Button>
             </Link>
           </li>
           <li>
@@ -103,7 +119,10 @@ const Header: React.FC = () => {
                 <span>{user.user_metadata?.name || user.email}</span>
               </Button>
             ) : (
-              <Button onClick={handleSignIn}>Sign In with Google</Button>
+              <Button onClick={handleSignIn}>
+                <UserRoundPlus />
+                Sign In
+              </Button>
             )}
           </li>
         </ul>

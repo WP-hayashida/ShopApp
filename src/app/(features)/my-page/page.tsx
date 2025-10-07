@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Shop } from "@/app/(features)/_lib/types";
@@ -15,11 +15,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  */
 export default function MyPage() {
   // Supabaseクライアントの初期化
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // ステート変数の定義
   const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
-  const [profile, setProfile] = useState<{ // ユーザープロフィール
+  const [profile, setProfile] = useState<{
+    // ユーザープロフィール
     username: string;
     avatar_url: string | null;
   } | null>(null);
@@ -31,7 +32,9 @@ export default function MyPage() {
   useEffect(() => {
     const fetchUserAndData = async () => {
       // ユーザー情報を取得
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
 
       if (user) {
@@ -48,11 +51,13 @@ export default function MyPage() {
           setProfile(profileData);
         } else {
           // プロフィールが存在しない場合、デフォルトのプロフィールを作成
-          const { error: insertError } = await supabase.from('profiles').insert({
-            id: user.id,
-            username: user.user_metadata?.name || "Unnamed User",
-            avatar_url: user.user_metadata?.avatar_url || null,
-          });
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              username: user.user_metadata?.name || "Unnamed User",
+              avatar_url: user.user_metadata?.avatar_url || null,
+            });
 
           if (insertError) {
             console.error("Error creating default profile:", insertError);
@@ -68,7 +73,7 @@ export default function MyPage() {
         const { data: fetchedShops, error: shopsError } = await supabase
           .from("shops")
           .select("*")
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
 
         if (shopsError) {
           console.error("Error fetching shops for MyPage:", shopsError);
@@ -77,16 +82,19 @@ export default function MyPage() {
         }
 
         // ユーザーがお気に入りしたお店の情報を取得
-        const { data: fetchedLikedShops, error: likedShopsError } = await supabase
-          .from('likes')
-          .select('shops(*)') // 関連するshopsテーブルの全カラムを選択
-          .eq('user_id', user.id);
+        const { data: fetchedLikedShops, error: likedShopsError } =
+          await supabase
+            .from("likes")
+            .select("shops(*)") // 関連するshopsテーブルの全カラムを選択
+            .eq("user_id", user.id);
 
         if (likedShopsError) {
           console.error("Error fetching liked shops:", likedShopsError);
         } else {
           // 結果は { shops: Shop } の配列なので、mapでShopの配列に変換
-          setLikedShops(fetchedLikedShops?.map(like => like.shops) as Shop[] || []);
+          setLikedShops(
+            (fetchedLikedShops?.map((like) => like.shops) as Shop[]) || []
+          );
         }
       }
       setLoading(false);
@@ -95,11 +103,13 @@ export default function MyPage() {
     fetchUserAndData();
 
     // 認証状態の変更を監視
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      // 認証状態が変わったらデータを再取得
-      fetchUserAndData();
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        // 認証状態が変わったらデータを再取得
+        fetchUserAndData();
+      }
+    );
 
     // クリーンアップ関数：リスナーを解除
     return () => {
@@ -110,7 +120,7 @@ export default function MyPage() {
   // Googleでサインインする処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -148,9 +158,9 @@ export default function MyPage() {
 
       <Tabs defaultValue="profile">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile">プロフィール</TabsTrigger>
-          <TabsTrigger value="posts">投稿したお店</TabsTrigger>
           <TabsTrigger value="favorites">お気に入りのお店</TabsTrigger>
+          <TabsTrigger value="posts">投稿したお店</TabsTrigger>
+          <TabsTrigger value="profile">プロフィール</TabsTrigger>
         </TabsList>
         {/* プロフィールタブ */}
         <TabsContent value="profile">

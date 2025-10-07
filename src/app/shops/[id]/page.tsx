@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // useRouterをインポート
 import { createClient } from '@/lib/supabase/client';
 import { Shop } from '@/app/(features)/_lib/types';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button'; // Buttonコンポーネントをインポート
 
 /**
  * お店の詳細ページコンポーネント
@@ -14,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
  */
 export default function ShopDetailPage() {
   const params = useParams();
+  const router = useRouter(); // useRouterを初期化
   // URLからIDを取得（idは string | string[] | undefined の可能性があるため、単一の文字列に整形）
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const supabase = createClient();
@@ -70,7 +72,6 @@ export default function ShopDetailPage() {
     );
   }
 
-  // エラー発生時の表示
   if (error) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -79,7 +80,6 @@ export default function ShopDetailPage() {
     );
   }
 
-  // お店情報がない場合の表示
   if (!shop) {
     return null; // もしくはプレースホルダーを表示
   }
@@ -87,6 +87,9 @@ export default function ShopDetailPage() {
   // メインコンテンツの表示
   return (
     <div className="container mx-auto max-w-4xl py-10">
+      <Button onClick={() => router.back()} variant="outline" className="mb-4">
+        戻る
+      </Button>
       <Card>
         <CardHeader>
           {shop.photo_url && (

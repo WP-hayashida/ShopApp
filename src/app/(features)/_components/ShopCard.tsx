@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { BookOpen, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -174,7 +174,10 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
           </Link>
         ) : (
           <Link href={`/shops/${shop.id}`} passHref>
-            <Button variant="outline">詳細を見る</Button>
+            <Button variant="outline">
+              <BookOpen />
+              詳細を見る
+            </Button>
           </Link>
         )}
       </CardFooter>
