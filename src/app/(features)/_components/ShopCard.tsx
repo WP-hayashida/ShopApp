@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
@@ -145,7 +145,11 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
             size="icon"
             onClick={handleLikeToggle}
             disabled={loadingLike}
-            className={isLiked ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-500"}
+            className={
+              isLiked
+                ? "text-red-500 hover:text-red-600"
+                : "text-gray-400 hover:text-gray-500"
+            }
           >
             <Heart fill={isLiked ? "currentColor" : "none"} />
           </Button>
@@ -153,7 +157,12 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
         </div>
         {editHref ? (
           <Link href={editHref} passHref>
-            <Button variant="secondary" className="transition-transform hover:scale-105 active:scale-95">編集する</Button>
+            <Button
+              variant="secondary"
+              className="transition-transform hover:scale-105 active:scale-95"
+            >
+              編集する
+            </Button>
           </Link>
         ) : (
           <Link href={`/shops/${shop.id}`} passHref>

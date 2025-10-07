@@ -114,6 +114,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shops_sorted_by_likes: {
+        Args: {
+          category_filter: string
+          keyword: string
+          location_filter: string
+        }
+        Returns: {
+          business_hours: string | null
+          category: string | null
+          comments: string | null
+          created_at: string
+          detailed_category: string | null
+          id: string
+          location: string | null
+          name: string
+          photo_url: string | null
+          url: string | null
+          user_id: string | null
+        }[]
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
@@ -133,6 +153,27 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      search_shops: {
+        Args: {
+          category_filter: string
+          keyword: string
+          location_filter: string
+        }
+        Returns: {
+          business_hours: string
+          category: string
+          comments: string
+          created_at: string
+          detailed_category: string
+          id: string
+          like_count: number
+          location: string
+          name: string
+          photo_url: string
+          url: string
+          user_id: string
+        }[]
       }
       set_limit: {
         Args: { "": number }
