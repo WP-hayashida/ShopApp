@@ -5,9 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Shop } from "@/app/(features)/_lib/types";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
 import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 
@@ -133,42 +133,43 @@ export default function MyPage() {
     <div className="container mx-auto max-w-4xl py-10">
       <h1 className="text-3xl font-bold mb-8">マイページ</h1>
 
-      {/* Profile Section */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">プロフィール</h2>
-        {profile ? (
-          <ProfileForm
-            initialUsername={profile.username}
-            initialAvatarUrl={profile.avatar_url}
-          />
-        ) : (
-          <p>プロフィールの読み込みに失敗しました。</p>
-        )}
-      </section>
-
-      <Separator className="my-12" />
-
-      {/* My Posts Section */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">あなたが投稿したお店</h2>
-        {myPosts.length > 0 ? (
-          <FilterableShopList initialShops={myPosts} />
-        ) : (
-          <p>まだ投稿したお店はありません。</p>
-        )}
-      </section>
-
-      <Separator className="my-12" />
-
-      {/* Favorites Section */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">お気に入りのお店</h2>
-        {likedShops.length > 0 ? (
-          <FilterableShopList initialShops={likedShops} />
-        ) : (
-          <p>お気に入りのお店はまだありません。</p>
-        )}
-      </section>
+      <Tabs defaultValue="profile">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="profile">プロフィール</TabsTrigger>
+          <TabsTrigger value="posts">投稿したお店</TabsTrigger>
+          <TabsTrigger value="favorites">お気に入りのお店</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile">
+          <section className="mt-8">
+            {profile ? (
+              <ProfileForm
+                initialUsername={profile.username}
+                initialAvatarUrl={profile.avatar_url}
+              />
+            ) : (
+              <p>プロフィールの読み込みに失敗しました。</p>
+            )}
+          </section>
+        </TabsContent>
+        <TabsContent value="posts">
+          <section className="mt-8">
+            {myPosts.length > 0 ? (
+              <FilterableShopList initialShops={myPosts} />
+            ) : (
+              <p>まだ投稿したお店はありません。</p>
+            )}
+          </section>
+        </TabsContent>
+        <TabsContent value="favorites">
+          <section className="mt-8">
+            {likedShops.length > 0 ? (
+              <FilterableShopList initialShops={likedShops} />
+            ) : (
+              <p>お気に入りのお店はまだありません。</p>
+            )}
+          </section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
