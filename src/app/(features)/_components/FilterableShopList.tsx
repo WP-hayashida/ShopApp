@@ -8,6 +8,8 @@ import {
   SearchFilters,
 } from "@/app/(features)/_components/SearchControls";
 
+import { Button } from "@/components/ui/button";
+
 const initialFilters: SearchFilters = {
   keyword: "",
   location: "",
@@ -17,13 +19,15 @@ const initialFilters: SearchFilters = {
 
 interface FilterableShopListProps {
   initialShops: Shop[];
+  initialRowCount?: number;
 }
 
 export default function FilterableShopList({
   initialShops,
+  initialRowCount = 1,
 }: FilterableShopListProps) {
-  const [shops, setShops] = useState<Shop[]>(initialShops);
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+  const [expanded, setExpanded] = useState(false);
 
   const filteredAndSortedShops = useMemo(() => {
     let filtered = [...initialShops];
@@ -33,6 +37,8 @@ export default function FilterableShopList({
       filtered = filtered.filter(
         (shop) =>
           shop.name.toLowerCase().includes(lowercasedKeyword) ||
+          (shop.detailed_category &&
+            shop.detailed_category.toLowerCase().includes(lowercasedKeyword)) ||
           (shop.comments &&
             shop.comments.toLowerCase().includes(lowercasedKeyword))
       );
@@ -68,14 +74,24 @@ export default function FilterableShopList({
     return filtered;
   }, [initialShops, filters]);
 
-  useEffect(() => {
-    setShops(filteredAndSortedShops);
-  }, [filteredAndSortedShops]);
+  const shopsToShow = useMemo(() => {
+    if (expanded || !initialRowCount) {
+      return filteredAndSortedShops;
+    }
+    return filteredAndSortedShops.slice(0, initialRowCount * 3);
+  }, [filteredAndSortedShops, expanded, initialRowCount]);
 
   return (
-    <div className="flex flex-col items-end w-full h-full">
-      <SearchControls initialFilters={filters} onSearch={setFilters} />
-      <ShopList shops={shops} />
+    <div className="flex flex-col items-center w-full h-full">
+      <div className="w-full flex justify-end">
+        <SearchControls initialFilters={filters} onSearch={setFilters} />
+      </div>
+      <ShopList shops={shopsToShow} />
+      {!expanded && filteredAndSortedShops.length > shopsToShow.length && (
+        <Button onClick={() => setExpanded(true)} variant="outline" className="mt-4">
+          さらに表示
+        </Button>
+      )}
     </div>
   );
 }
