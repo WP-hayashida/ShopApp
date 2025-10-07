@@ -35,7 +35,7 @@ const categories = [
 const sortOptions = [
   { value: "created_at.desc", label: "新着順" },
   { value: "created_at.asc", label: "古い順" },
-  { value: "likes.desc", label: "いいね順" },
+  { value: "like_count.desc", label: "いいね順" },
 ];
 
 export interface SearchFilters {

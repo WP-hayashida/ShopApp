@@ -1,77 +1,48 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
-import ShopList from "@/app/(features)/_components/ShopList";
 import { createClient } from "@/lib/supabase/client";
 import { Shop } from "@/app/(features)/_lib/types";
-import {
-  SearchControls,
-  SearchFilters,
-} from "@/app/(features)/_components/SearchControls";
-
-const initialFilters: SearchFilters = {
-  keyword: "",
-  location: "",
-  category: "",
-  sortBy: "",
-};
+import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
 
 export default function HomePage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<SearchFilters>(initialFilters);
   const supabase = createClient();
 
   useEffect(() => {
     const getShops = async () => {
       setLoading(true);
 
-      const { keyword, location, category, sortBy } = filters;
-      let query;
+      const { data: shopsData, error: shopsError } = await supabase
+        .from("shops")
+        .select("*");
 
-      if (sortBy === "likes.desc") {
-        // Sort by likes using the RPC function
-        query = supabase.rpc("get_shops_sorted_by_likes", {
-          keyword: keyword || "",
-          location_filter: location || "",
-          category_filter: category || "",
-        });
-      } else {
-        // Handle created_at sorting
-        query = supabase.from("shops").select("*");
+      const { data: likesData, error: likesError } = await supabase
+        .from("likes")
+        .select("shop_id");
 
-        if (keyword) {
-          query = query.or(
-            `name.ilike.%${keyword}%,comments.ilike.%${keyword}%`
-          );
-        }
-        if (location) {
-          query = query.eq("location", location);
-        }
-        if (category) {
-          query = query.eq("category", category);
-        }
-
-        const [field, order] = sortBy.split('.');
-        // sortBy が空文字列の場合はデフォルトで created_at.desc を使用
-        const actualField = field || "created_at";
-        const actualOrder = order || "desc";
-        query = query.order(actualField, { ascending: actualOrder === 'asc' });
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching shops:", error);
+      if (shopsError || likesError) {
+        console.error("Error fetching shops or likes:", shopsError || likesError);
         setShops([]);
       } else {
-        setShops(data as Shop[]);
+        const likesCount = likesData.reduce((acc, like) => {
+          acc[like.shop_id] = (acc[like.shop_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const shopsWithLikes = shopsData.map((shop) => ({
+          ...shop,
+          like_count: likesCount[shop.id] || 0,
+        }));
+
+        setShops(shopsWithLikes as Shop[]);
       }
       setLoading(false);
     };
 
     getShops();
-  }, [supabase, filters]);
+  }, [supabase]);
 
   if (loading) {
     return (
@@ -85,11 +56,8 @@ export default function HomePage() {
     <main className="flex min-h-screen flex-col p-24">
       <div className="flex items-center justify-center w-full relative mb-4">
         <h1 className="text-3xl font-bold">Our Shops</h1>
-        <div className="absolute right-0 top-0">
-          <SearchControls initialFilters={filters} onSearch={setFilters} />
-        </div>
       </div>
-      <ShopList shops={shops} />
+      <FilterableShopList initialShops={shops} />
     </main>
   );
 }

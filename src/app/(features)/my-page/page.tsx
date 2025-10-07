@@ -4,11 +4,10 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Shop } from "@/app/(features)/_lib/types";
-import ShopCard from "@/app/(features)/_components/ShopCard";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
-import Link from "next/link";
+import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
 
 
 
@@ -153,11 +152,7 @@ export default function MyPage() {
       <section>
         <h2 className="text-2xl font-semibold mb-4">あなたが投稿したお店</h2>
         {myPosts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {myPosts.map((shop) => (
-              <ShopCard key={shop.id} shop={shop} editHref={`/my-page/edit/${shop.id}`} />
-            ))}
-          </div>
+          <FilterableShopList initialShops={myPosts} />
         ) : (
           <p>まだ投稿したお店はありません。</p>
         )}
@@ -169,11 +164,7 @@ export default function MyPage() {
       <section>
         <h2 className="text-2xl font-semibold mb-4">お気に入りのお店</h2>
         {likedShops.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {likedShops.map((shop) => (
-              <ShopCard key={shop.id} shop={shop} />
-            ))}
-          </div>
+          <FilterableShopList initialShops={likedShops} />
         ) : (
           <p>お気に入りのお店はまだありません。</p>
         )}
