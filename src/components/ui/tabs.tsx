@@ -5,8 +5,10 @@ import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
+// タブコンポーネントのルート要素
 const Tabs = TabsPrimitive.Root
 
+// タブのリストを囲むコンポーネント
 const TabsList = React.forwardRef<React.ElementRef<typeof TabsPrimitive.List>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>>(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
@@ -18,6 +20,7 @@ const TabsList = React.forwardRef<React.ElementRef<typeof TabsPrimitive.List>, R
 ))
 TabsList.displayName = TabsPrimitive.List.displayName
 
+// 各タブのトリガー（ボタン）となるコンポーネント
 const TabsTrigger = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>>(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
@@ -29,6 +32,7 @@ const TabsTrigger = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Trigg
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
+// 各タブの内容を表示するコンポーネント
 const TabsContent = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Content>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>>(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}

@@ -8,22 +8,29 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
+/**
+ * お店の詳細ページコンポーネント
+ * URLのIDに基づいて特定のお店の詳細情報を表示します。
+ */
 export default function ShopDetailPage() {
   const params = useParams();
-  // id can be string | string[] | undefined. Ensure it's a single string.
+  // URLからIDを取得（idは string | string[] | undefined の可能性があるため、単一の文字列に整形）
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const supabase = createClient();
 
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // ステート変数の定義
+  const [shop, setShop] = useState<Shop | null>(null); // お店情報
+  const [loading, setLoading] = useState(true); // ローディング状態
+  const [error, setError] = useState<string | null>(null); // エラーメッセージ
 
+  // 副作用フック：お店の情報を取得
   useEffect(() => {
     const fetchShop = async () => {
       if (!id) return;
 
       try {
         setLoading(true);
+        // SupabaseからIDに一致するお店のデータを取得
         const { data, error } = await supabase
           .from('shops')
           .select('*')
@@ -54,6 +61,7 @@ export default function ShopDetailPage() {
     fetchShop();
   }, [id, supabase]);
 
+  // ローディング中の表示
   if (loading) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -62,6 +70,7 @@ export default function ShopDetailPage() {
     );
   }
 
+  // エラー発生時の表示
   if (error) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -70,10 +79,12 @@ export default function ShopDetailPage() {
     );
   }
 
+  // お店情報がない場合の表示
   if (!shop) {
-    return null; // Or some other placeholder
+    return null; // もしくはプレースホルダーを表示
   }
 
+  // メインコンテンツの表示
   return (
     <div className="container mx-auto max-w-4xl py-10">
       <Card>

@@ -1,36 +1,155 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ShopShare - お気に入りのお店共有アプリ
 
-## Getting Started
+## 1. プロジェクト概要
 
-First, run the development server:
+ShopShare は、自分のお気に入りのお店や場所を記録し、他のユーザーと共有するための Web アプリケーションです。「あのカフェ、もう一度行きたいけど名前を思い出せない…」「旅行先でおすすめの雑貨屋さんは？」といった日常の小さな困りごとを解決し、新しい発見のきっかけを提供することを目的としています。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+ユーザーは Google アカウントで簡単にログインでき、直感的な操作でお店の情報を投稿・管理できます。他のユーザーの投稿を参考にしたり、「いいね」でお気に入りをストックしたりすることも可能です。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 2. 主な機能
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+本アプリケーションが提供する主な機能は以下の通りです。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **ユーザー認証:**
 
-## Learn More
+  - Google アカウント連携による、安全で簡単なサインイン・サインアウト機能。
+  - 認証状態はヘッダーに表示され、セッション管理は Supabase Auth が担います。
 
-To learn more about Next.js, take a look at the following resources:
+- **お店の投稿・編集・削除:**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+  - お店の名前、写真、カテゴリ、営業時間、コメントなどの詳細情報を投稿できます。
+  - 写真は Supabase Storage にアップロードされ、URL がデータベースに保存されます。
+  - 自分が投稿したお店は、後から情報を編集したり、投稿自体を削除したりすることが可能です。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **一覧表示と検索・ソート:**
 
-## Deploy on Vercel
+  - トップページでは、投稿されたすべてのお店がカード形式で一覧表示されます。
+  - キーワード（店名、コメント、詳細カテゴリ）、場所（都道府県）、カテゴリによる絞り込み検索が可能です。
+  - 検索結果は「新着順」「古い順」「いいね順」で並び替えることができます。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **いいね機能:**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+  - 各お店のカードにあるハートアイコンをクリックすることで、簡単に「いいね」の付け外しができます。
+  - いいねの数はリアルタイムでカウントされ、表示に反映されます。
+
+- **マイページ:**
+  - タブ形式の UI で「プロフィール」「投稿したお店」「お気に入りのお店」を切り替えて表示します。
+  - プロフィール（ニックネーム、アバター URL）を編集できます。
+  - 自分が投稿したお店、いいねしたお店のそれぞれに対して、一覧表示と検索・ソート機能を利用できます。
+  - お店のリストは初期状態で 1 行のみ表示され、「さらに表示」ボタンで全件を閲覧できる UI になっています。
+
+## 3. 技術スタックと選定理由
+
+| カテゴリ          | 技術                                                                                                            | 選定理由 -                                                                                                                                                                                                                                     |
+| :---------------- | :-------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| フレームワーク    | [Next.js](https://nextjs.org/) (App Router)                                                                     | React ベースの高い開発者体験と、サーバーサイドレンダリング(SSR)や静的サイト生成(SSG)などの豊富な機能を提供するため。App Router による最新のルーティングとレイアウト管理の恩恵も受けられます。 -                                                |
+| 言語              | TypeScript                                                                                                      | 静的型付けによる開発時のエラー検出とコード補完の強化により、コードの品質とメンテナンス性を向上させるため。 -                                                                                                                                   |
+| データベース&認証 | [Supabase](https://supabase.com/)                                                                               | PostgreSQL データベース、認証、ストレージ、リアルタイム機能をオールインワンで提供し、バックエンド開発を大幅に簡素化できるため。手軽に始められ、スケールも可能です。 -                                                                          |
+| UI コンポーネント | [shadcn/ui](https://ui.shadcn.com/), [Radix UI](https://www.radix-ui.com/), [Vaul](https://vaul.emilkowal.ski/) | shadcn/ui は、コピー&ペーストでプロジェクトに導入できる再利用可能なコンポーネント群です。内部的に Radix UI を使用しており、アクセシビリティとカスタマイズ性に優れています。Vaul はモバイルフレンドリーなドロワーコンポーネントを提供します。 - |
+| スタイリング      | [Tailwind CSS](https://tailwindcss.com/)                                                                        | ユーティリティファーストなアプローチにより、HTML から離れることなく迅速に UI を構築できるため。 -                                                                                                                                              |
+| フォント          | [Geist](https://vercel.com/font)                                                                                | Vercel によって開発されたモダンで可読性の高いフォントファミリー。Next.js との親和性が高いです。 -                                                                                                                                              |
+
+## 4. セットアップと起動方法
+
+1.  **環境変数の設定:**
+    プロジェクトのルートに `.env.local` ファイルを作成し、Supabase から取得したプロジェクト URL と Anon キーを設定します。
+
+    ```
+    NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+    ```
+
+2.  **依存関係のインストール:**
+
+    ```bash
+    npm install
+    ```
+
+3.  **開発サーバーの起動:**
+
+    ```bash
+    npm run dev
+    ```
+
+    ブラウザで [http://localhost:3000](http://localhost:3000) を開いてください。
+
+## 5. データベーススキーマ
+
+Supabase の PostgreSQL データベースには、主に以下のテーブルがあります。
+
+### `profiles` テーブル
+
+ユーザーのプロフィール情報を格納します。Supabase の`auth.users`テーブルと 1 対 1 の関係にあります。
+
+| カラム名     | 型                   | 説明                                |
+| :----------- | :------------------- | :---------------------------------- |
+| `id`         | `uuid` (Primary Key) | ユーザー ID (`auth.users.id`と一致) |
+| `username`   | `text`               | ユーザーのニックネーム              |
+| `avatar_url` | `text`               | アバター画像の URL                  |
+| `created_at` | `timestamptz`        | 作成日時                            |
+| `updated_at` | `timestamptz`        | 更新日時                            |
+
+### `shops` テーブル
+
+投稿されたお店の情報を格納します。
+
+| カラム名            | 型                   | 説明                  |
+| :------------------ | :------------------- | :-------------------- |
+| `id`                | `uuid` (Primary Key) | 店舗の一意な ID       |
+| `user_id`           | `uuid` (Foreign Key) | 投稿したユーザーの ID |
+| `name`              | `text`               | 店舗名                |
+| `photo_url`         | `text`               | 写真の URL            |
+| `url`               | `text`               | 関連 URL              |
+| `business_hours`    | `text`               | 営業時間              |
+| `location`          | `text`               | 場所（都道府県など）  |
+| `category`          | `text`               | 大カテゴリ            |
+| `detailed_category` | `text`               | 詳細カテゴリ          |
+| `comments`          | `text`               | コメント              |
+| `created_at`        | `timestamptz`        | 作成日時              |
+
+### `likes` テーブル
+
+どのお店をどのユーザーがいいねしたかを記録する中間テーブルです。
+
+| カラム名     | 型                     | 説明                    |
+| :----------- | :--------------------- | :---------------------- |
+| `id`         | `bigint` (Primary Key) | いいねの一意な ID       |
+| `user_id`    | `uuid` (Foreign Key)   | いいねしたユーザーの ID |
+| `shop_id`    | `uuid` (Foreign Key)   | いいねされたお店の ID   |
+| `created_at` | `timestamptz`          | 作成日時                |
+
+## 6. 主要なロジック解説
+
+### 1. 認証フロー
+
+- **サインイン:**
+  1.  ユーザーが「Google でサインイン」ボタンをクリックします。
+  2.  Supabase の `signInWithOAuth` メソッドが呼び出され、Google の認証ページにリダイレクトされます。
+  3.  認証が成功すると、Supabase は指定されたコールバック URL (`/auth/callback`) にリダイレクトし、URL に認証コードを付与します。
+- **コールバック処理:**
+  1.  `src/app/auth/callback/route.ts` がリクエストを受け取ります。
+  2.  URL から認証コードを取得し、Supabase の `exchangeCodeForSession` メソッドを使用してセッション（ユーザー情報とトークン）と交換します。
+  3.  セッションの取得が成功すると、ユーザーはホームページにリダイレクトされます。
+- **セッション管理:**
+  - 取得されたセッション情報はブラウザのクッキーに安全に保存されます。
+  - クライアントサイド (`client.ts`) とサーバーサイド (`server.ts`) の Supabase クライアントは、このクッキーを自動的に読み書きし、認証状態を維持します。
+  - `onAuthStateChange` リスナーを使用して、サインインやサインアウトといった認証状態の変化を検知し、UI をリアルタイムに更新します。
+
+### 2. 検索・ソート機能 (`FilterableShopList`)
+
+- **コンポーネント設計:**
+  - お店のリスト表示、検索、ソート機能は `src/app/(features)/_components/FilterableShopList.tsx` コンポーネントに集約されています。
+  - このコンポーネントは、表示したいお店の初期配列 (`initialShops`) をプロパティとして受け取ることで、再利用性を高めています（ホームページとマイページの両方で使用）。
+- **クライアントサイド処理:**
+  - フィルタリングとソートはすべてクライアントサイド（ブラウザ上）で実行されます。これにより、ユーザーが検索条件を変更するたびにサーバーへ問い合わせる必要がなくなり、高速な UI 応答が実現されています。
+  - `useMemo` フックを活用し、`initialShops` 配列やフィルター条件が変更された場合にのみフィルタリングとソートの再計算を行うことで、不要なレンダリングを防ぎ、パフォーマンスを最適化しています。
+
+### 3. マイページ (`my-page`)
+
+- **タブ UI:**
+  - `src/app/(features)/my-page/page.tsx` で実装されています。
+  - Radix UI をベースにしたカスタムタブコンポーネント (`src/components/ui/tabs.tsx`) を利用し、「プロフィール」「投稿したお店」「お気に入りのお店」のセクションをスムーズに切り替えられるようにしています。
+- **コンポーネントの再利用:**
+  - 「投稿したお店」と「お気に入りのお店」のリスト表示には、前述の `FilterableShopList` コンポーネントを再利用しています。これにより、コードの重複を避け、保守性を高めています。
+- **UI/UX の工夫:**
+  - お店のリストは初期状態で 1 行（3 件）だけ表示し、「さらに表示」ボタンをクリックすることで残りのアイテムが展開されるようになっています。これにより、初期表示の画面をすっきりと見せています。

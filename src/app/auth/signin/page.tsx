@@ -4,12 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
 
+/**
+ * サインインページコンポーネント
+ * Googleアカウントでのサインイン機能を提供します。
+ */
 export default function SignInPage() {
+  // Googleでのサインイン処理
   const handleSignIn = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
+        // 認証後のリダイレクト先
         redirectTo: `${location.origin}/auth/callback`,
       },
     });

@@ -7,11 +7,17 @@ import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 
+/**
+ * ヘッダーコンポーネント
+ * ナビゲーションリンクと認証状態に応じた表示（サインイン/サインアウトボタン）を提供します。
+ */
 const Header: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = useMemo(() => createClient(), []); // Wrap createClient in useMemo
+  // ステート変数の定義
+  const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
+  const [loading, setLoading] = useState(true); // ローディング状態
+  const supabase = useMemo(() => createClient(), []); // Supabaseクライアントをメモ化
 
+  // 副作用フック：ユーザー情報を取得し、認証状態の変更を監視
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -23,17 +29,20 @@ const Header: React.FC = () => {
 
     getUser();
 
+    // 認証状態の変更を監視するリスナーを設定
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
       }
     );
 
+    // クリーンアップ関数：リスナーを解除
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]); // supabaseのインスタンスが変わった時のみ再実行
 
+  // サインイン処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -43,10 +52,11 @@ const Header: React.FC = () => {
     });
   };
 
+  // サインアウト処理
   const handleSignOut = async () => {
-    if (window.confirm('Are you sure you want to sign out?')) {
+    if (window.confirm('本当にサインアウトしますか？')) {
       await supabase.auth.signOut();
-      // Refresh the page to reflect the signed-out state
+      // サインアウト状態を反映するためにページをリロード
       window.location.reload();
     }
   };
@@ -74,6 +84,7 @@ const Header: React.FC = () => {
             </Link>
           </li>
           <li>
+            {/* ローディング中でなく、ユーザーが存在する場合にユーザー情報を表示 */}
             {!loading && user ? (
               <Button
                 onClick={handleSignOut}

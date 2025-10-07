@@ -17,18 +17,25 @@ import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+// ShopCardコンポーネントのプロパティ型定義
 interface ShopCardProps {
-  shop: Shop;
-  editHref?: string; // Optional prop for the edit link
+  shop: Shop; // 表示するお店の情報
+  editHref?: string; // 編集ページへのリンク（オプショナル）
 }
 
+/**
+ * 個々のお店情報を表示するカードコンポーネント
+ * いいね機能も内包しています。
+ */
 const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
   const supabase = createClient();
-  const [user, setUser] = useState<User | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [loadingLike, setLoadingLike] = useState(true);
+  // ステート変数の定義
+  const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
+  const [isLiked, setIsLiked] = useState(false); // 現在のユーザーがいいねしているか
+  const [likeCount, setLikeCount] = useState(0); // いいねの数
+  const [loadingLike, setLoadingLike] = useState(true); // いいね処理中か
 
+  // 副作用フック：いいねの状態と数を取得
   useEffect(() => {
     const checkLikeStatus = async () => {
       setLoadingLike(true);
@@ -37,7 +44,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
       } = await supabase.auth.getUser();
       setUser(user);
 
-      // Fetch like count for this shop
+      // このお店のいいね数を取得
       const { count, error: countError } = await supabase
         .from("likes")
         .select("id", { count: "exact" })
@@ -49,8 +56,8 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
         setLikeCount(count || 0);
       }
 
+      // ログインユーザーがいいねしているか確認
       if (user) {
-        // Check if current user liked this shop
         const { data, error } = await supabase
           .from("likes")
           .select("id")
@@ -70,6 +77,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
     checkLikeStatus();
   }, [shop.id, supabase]);
 
+  // いいねのトグル処理
   const handleLikeToggle = async () => {
     if (!user) {
       alert("いいねするにはログインしてください。");
@@ -78,7 +86,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
 
     setLoadingLike(true);
     if (isLiked) {
-      // Unlike
+      // いいねを取り消す
       const { error } = await supabase
         .from("likes")
         .delete()
@@ -92,7 +100,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
         setLikeCount((prev) => prev - 1);
       }
     } else {
-      // Like
+      // いいねする
       const { error } = await supabase.from("likes").insert({
         user_id: user.id,
         shop_id: shop.id,
