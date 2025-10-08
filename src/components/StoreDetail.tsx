@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image'; // Import Image component
 import { ArrowLeft, Heart, Share2, MapPin, Clock, DollarSign, Star, ExternalLink, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -104,9 +105,12 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
             {/* Store Image */}
             <Card className="overflow-hidden">
               <div className="relative">
-                <img
+                <Image
                   src={store.imageUrl}
                   alt={store.name}
+                  width={800} // Arbitrary width, actual size controlled by className
+                  height={600} // Arbitrary height, actual size controlled by className
+                  priority // Prioritize loading for LCP
                   className="w-full h-64 md:h-80 object-cover"
                 />
                 <div className="absolute top-4 right-4 flex gap-2">
@@ -277,9 +281,11 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex gap-3 cursor-pointer hover:bg-accent p-2 rounded-lg transition-colors">
-                      <img
+                      <Image
                         src={`https://images.unsplash.com/photo-${1500000000000 + i}?w=64&h=64&fit=crop`}
                         alt="Related store"
+                        width={64} // Explicit width
+                        height={64} // Explicit height
                         className="w-12 h-12 rounded-lg object-cover"
                       />
                       <div className="flex-1 min-w-0">

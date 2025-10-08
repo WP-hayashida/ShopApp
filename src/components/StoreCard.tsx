@@ -32,10 +32,9 @@ interface Store {
 interface StoreCardProps {
   store: Store;
   onLike: (storeId: string) => void;
-  index: number;
 }
 
-export function StoreCard({ store, onLike, index }: StoreCardProps) {
+export function StoreCard({ store, onLike }: StoreCardProps) {
   const categoryConfig = getCategoryConfig(store.category);
   const IconComponent = categoryConfig.icon;
 
