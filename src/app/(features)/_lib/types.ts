@@ -1,15 +1,30 @@
 /**
+ * ユーザー情報を表すインターフェース
+ */
+export interface User {
+  name: string;
+  avatar: string;
+  username: string;
+}
+
+/**
  * お店の情報を表すインターフェース
  */
 export interface Shop {
   id: string; // 店舗の一意なID
   name: string; // 店舗名
-  photo_url: string; // 写真のURL
+  imageUrl: string; // 写真のURL (photo_urlからマッピング)
   url: string; // 関連URL
-  business_hours: string; // 営業時間
+  hours: string; // 営業時間 (business_hoursからマッピング)
   location: string; // 場所（都道府県など）
   category: string; // 大カテゴリ
   detailed_category: string; // 詳細カテゴリ
-  comments: string; // コメント
-  like_count?: number; // いいねの数（オプショナル）
+  description: string; // コメント (commentsからマッピング)
+  likes: number; // いいねの数 (like_countからマッピング)
+  rating: number; // 評価
+  reviewCount: number; // レビュー数
+  price: string; // 価格帯
+  tags: string[]; // タグ
+  user: User; // 投稿ユーザー情報
+  liked: boolean; // 現在のユーザーがいいねしているか
 }

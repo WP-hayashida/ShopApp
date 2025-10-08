@@ -2,82 +2,38 @@
 
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import { Heart, Star, MapPin, Clock, DollarSign, Eye, Share2, Bookmark } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card"; // Adjusted path
+import { Button } from "@/components/ui/button"; // Adjusted path
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback"; // Adjusted path
+import { getCategoryConfig } from "@/components/CategoryConfig"; // Adjusted path
 import Link from "next/link";
-import { BookOpen, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import type { User as SupabaseUser } from "@supabase/supabase-js"; // Renamed to avoid conflict with our User interface
 
-// ShopCardコンポーネントのプロパティ型定義
 interface ShopCardProps {
   shop: Shop; // 表示するお店の情報
   editHref?: string; // 編集ページへのリンク（オプショナル）
+  onNavigate: (page: 'detail', shop: Shop) => void; // Added for consistency with StoreCard, though we'll use Link
 }
 
-/**
- * 個々のお店情報を表示するカードコンポーネント
- * いいね機能も内包しています。
- */
-const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
+const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref, onNavigate }) => {
   const supabase = createClient();
-  // ステート変数の定義
-  const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
-  const [isLiked, setIsLiked] = useState(false); // 現在のユーザーがいいねしているか
-  const [likeCount, setLikeCount] = useState(0); // いいねの数
-  const [loadingLike, setLoadingLike] = useState(true); // いいね処理中か
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isLiked, setIsLiked] = useState(shop.liked); // Initialize from shop.liked
+  const [likeCount, setLikeCount] = useState(shop.likes); // Initialize from shop.likes
+  const [loadingLike, setLoadingLike] = useState(false); // Set to false initially
 
-  // 副作用フック：いいねの状態と数を取得
   useEffect(() => {
-    const checkLikeStatus = async () => {
-      setLoadingLike(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-
-      // このお店のいいね数を取得
-      const { count, error: countError } = await supabase
-        .from("likes")
-        .select("id", { count: "exact" })
-        .eq("shop_id", shop.id);
-
-      if (countError) {
-        console.error("Error fetching like count:", countError);
-      } else {
-        setLikeCount(count || 0);
-      }
-
-      // ログインユーザーがいいねしているか確認
-      if (user) {
-        const { data, error } = await supabase
-          .from("likes")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("shop_id", shop.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error checking like status:", error);
-        } else {
-          setIsLiked(!!data);
-        }
-      }
-      setLoadingLike(false);
+    const checkUser = async () => {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      setUser(supabaseUser);
     };
+    checkUser();
+  }, [supabase]);
 
-    checkLikeStatus();
-  }, [shop.id, supabase]);
-
-  // いいねのトグル処理
   const handleLikeToggle = async () => {
     if (!user) {
       alert("いいねするにはログインしてください。");
@@ -86,7 +42,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
 
     setLoadingLike(true);
     if (isLiked) {
-      // いいねを取り消す
       const { error } = await supabase
         .from("likes")
         .delete()
@@ -100,7 +55,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
         setLikeCount((prev) => prev - 1);
       }
     } else {
-      // いいねする
       const { error } = await supabase.from("likes").insert({
         user_id: user.id,
         shop_id: shop.id,
@@ -116,71 +70,147 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref }) => {
     setLoadingLike(false);
   };
 
+  const categoryConfig = getCategoryConfig(shop.category);
+  const IconComponent = categoryConfig.icon;
+
   return (
-    <Card className="w-full shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
-      <CardHeader className="p-0">
-        {shop.photo_url ? (
-          <Image
-            src={shop.photo_url}
+    <Card className="overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group">
+      <CardContent className="p-0">
+        {/* Image Section */}
+        <div className="relative overflow-hidden">
+          <ImageWithFallback
+            src={shop.imageUrl}
             alt={shop.name}
-            width={300}
+            className="w-full h-48 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
+            width={300} // Added width and height for Next/Image
             height={200}
-            className="rounded-t-lg object-cover w-full h-48"
+            onClick={() => onNavigate('detail', shop)}
           />
-        ) : (
-          <div className="rounded-t-lg bg-gray-200 w-full h-48 flex items-center justify-center">
-            <span className="text-gray-500">No Image</span>
+          
+          {/* Category Badge */}
+          <div className={`absolute top-3 left-3 ${categoryConfig.bgColor} backdrop-blur-sm rounded-md px-2 py-1 border ${categoryConfig.borderColor}`}>
+            <div className="flex items-center space-x-1">
+              <IconComponent className={`size-3 ${categoryConfig.textColor}`} />
+              <span className={`text-xs font-medium ${categoryConfig.textColor}`}>
+                {shop.category}
+              </span>
+            </div>
           </div>
-        )}
-      </CardHeader>
-      <CardContent className="pt-4 flex-grow">
-        <CardTitle className="text-xl font-semibold mb-2">
-          {shop.name}
-        </CardTitle>
-        <CardDescription className="text-sm text-gray-600">
-          <p>
-            <strong>カテゴリ:</strong> {shop.category}
-          </p>
-          <p>
-            <strong>場所:</strong> {shop.location}
-          </p>
-        </CardDescription>
-      </CardContent>
-      <CardFooter className="flex justify-between items-center pb-4 px-4 mt-auto">
-        <div className="flex items-center space-x-1">
+
+          {/* Like Button */}
           <Button
-            variant="ghost"
             size="icon"
-            onClick={handleLikeToggle}
+            variant="secondary"
+            className="absolute top-3 right-3 size-8 rounded-md bg-background/90 hover:bg-background border shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLikeToggle(); // Use existing handleLikeToggle
+            }}
             disabled={loadingLike}
-            className={
-              isLiked
-                ? "text-red-500 hover:text-red-600"
-                : "text-gray-400 hover:text-gray-500"
-            }
           >
-            <Heart fill={isLiked ? "currentColor" : "none"} />
+            <Heart 
+              className={`size-4 ${
+                isLiked
+                  ? 'text-red-500 fill-red-500' 
+                  : 'text-muted-foreground'
+              }`}
+            />
           </Button>
-          <span className="text-sm text-gray-600">{likeCount}</span>
         </div>
-        {editHref ? (
-          <Link href={editHref} passHref>
-            <Button
-              variant="secondary"
-              className="transition-transform hover:scale-105 active:scale-95"
+
+        {/* Content Section */}
+        <div className="p-4 space-y-3">
+          {/* User Info */}
+          <div className="flex items-center space-x-3">
+            <Avatar className="size-8 border">
+              <AvatarImage src={shop.user.avatar} />
+              <AvatarFallback className="text-xs">{shop.user.name[0]}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{shop.user.name}</p>
+              <p className="text-xs text-muted-foreground"> @{shop.user.username}</p>
+            </div>
+            <div className="flex items-center space-x-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">
+              <Star className="size-3 text-amber-600 fill-amber-600" />
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{shop.rating.toFixed(1)}</span>
+            </div>
+          </div>
+
+          {/* Store Info */}
+          <div className="space-y-2">
+            <h3 
+              className="font-semibold text-lg leading-tight cursor-pointer hover:text-foreground/80 transition-colors"
+              onClick={() => onNavigate('detail', shop)}
             >
-              編集する
-            </Button>
-          </Link>
-        ) : (
-          <Link href={`/shops/${shop.id}`} passHref>
-            <Button variant="outline">
-              <BookOpen />
-              詳細を見る
-            </Button>
-          </Link>
-        )}
-      </CardFooter>
+              {shop.name}
+            </h3>
+
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {shop.description}
+            </p>
+
+            {/* Location & Hours */}
+            <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center space-x-2">
+                <MapPin className="size-3" />
+                <span className="truncate">{shop.location}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Clock className="size-3" />
+                  <span>{shop.hours}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <DollarSign className="size-3" />
+                  <span className="font-medium text-foreground">{shop.price}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="flex flex-wrap gap-1">
+              {shop.tags.slice(0, 3).map((tag) => (
+                <Badge 
+                  key={tag}
+                  variant="outline" 
+                  className="text-xs border-border/60 text-muted-foreground"
+                >
+                  #{tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            <div className="flex items-center space-x-4">
+              <button 
+                className="flex items-center space-x-1 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => handleLikeToggle()} // Use existing handleLikeToggle
+                disabled={loadingLike}
+              >
+                <Heart className={`size-4 ${isLiked ? 'text-red-500 fill-red-500' : ''}`} />
+                <span className="text-sm">{likeCount}</span>
+              </button>
+
+              <div className="flex items-center space-x-1 text-muted-foreground">
+                <Eye className="size-4" />
+                <span className="text-sm">{shop.reviewCount}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-1">
+              <Button variant="ghost" size="icon" className="size-8 hover:bg-muted/50">
+                <Share2 className="size-4" />
+              </Button>
+              
+              <Button variant="ghost" size="icon" className="size-8 hover:bg-muted/50">
+                <Bookmark className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 };

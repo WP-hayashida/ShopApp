@@ -35,9 +35,9 @@ const categories = [
 
 // 定数：ソート順オプション
 const sortOptions = [
-  { value: "created_at.desc", label: "新着順" },
-  { value: "created_at.asc", label: "古い順" },
-  { value: "like_count.desc", label: "いいね順" },
+  { value: "created_at.asc", label: "新着順" },
+  { value: "created_at.desc", label: "古い順" },
+  { value: "likes.desc", label: "いいね順" },
 ];
 
 // 検索フィルターのインターフェース
@@ -59,7 +59,7 @@ const defaultResetFilters: SearchFilters = {
   keyword: "",
   location: "",
   category: "",
-  sortBy: "created_at.desc", // 新着順をデフォルトに
+  sortBy: "created_at.asc", // 新着順をデフォルトに
 };
 
 /**
@@ -100,15 +100,15 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
         </Button>
       </DrawerTrigger>
       <DrawerContent onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto w-full max-w-sm">
+        <div className="mx-auto w-full max-w-sm flex flex-col h-full"> {/* Added flex flex-col h-full */}
           <DrawerHeader>
             <DrawerTitle>検索・絞り込み</DrawerTitle>
             <DrawerDescription>
               お店を検索・絞り込みます。
             </DrawerDescription>
           </DrawerHeader>
-          <div className="p-4 pb-0">
-            <div className="grid gap-4">
+          <div className="p-4 flex-1 overflow-auto"> {/* Added flex-1 and overflow-auto */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Changed to responsive grid */}
               {/* キーワード入力 */}
               <div className="grid gap-2">
                 <Label htmlFor="keyword">キーワード</Label>
@@ -188,7 +188,7 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
               </div>
             </div>
           </div>
-          <DrawerFooter className="mt-auto border-t bg-background p-4">
+          <DrawerFooter className="border-t bg-background p-4 flex-shrink-0"> {/* Added flex-shrink-0 */}
             <Button onClick={handleApply}>検索</Button>
             <Button
               type="button"
