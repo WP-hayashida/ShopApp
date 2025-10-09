@@ -2,7 +2,6 @@ import React, {
   useState,
   useEffect,
   useMemo,
-  useCallback,
   useRef,
 } from "react"; // Added useRef
 import { Search, LogOut, Plus, UserRoundPlus } from "lucide-react";
@@ -22,15 +21,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useSearch } from "@/context/SearchContext"; // Import useSearch hook
 
-interface HeaderProps {
-  currentPage?: string;
-}
-
-export function Header({ currentPage }: HeaderProps) {
+export function Header() {
   const supabase = useMemo(() => createClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { searchTerm, setSearchTerm } = useSearch(); // Use searchTerm from context
+  const { setSearchTerm } = useSearch(); // Use searchTerm from context
   const [localSearchTerm, setLocalSearchTerm] = useState(""); // Local state for input value
   const [isComposing, setIsComposing] = useState(false); // State to track IME composition
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce ref

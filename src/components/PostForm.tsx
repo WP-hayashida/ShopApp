@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Upload, MapPin, Clock, DollarSign, Tag, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, MapPin, Clock, Tag, Camera } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
+import Image from "next/image";
 
 interface PostFormProps {
   onNavigate: (page: 'home' | 'mypage') => void;
@@ -19,9 +20,8 @@ export function PostForm({ onNavigate }: PostFormProps) {
     description: '',
     location: '',
     hours: '',
-    priceRange: '',
     url: '',
-    tags: [],
+    tags: [] as string[],
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [newTag, setNewTag] = useState('');
@@ -31,10 +31,6 @@ export function PostForm({ onNavigate }: PostFormProps) {
     'ファストフード', '居酒屋', 'バー', 'スイーツ', 'ベーカリー'
   ];
 
-  const priceRanges = [
-    '¥500以下', '¥500-1,000', '¥1,000-2,000', '¥2,000-3,000', 
-    '¥3,000-5,000', '¥5,000-10,000', '¥10,000以上'
-  ];
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -149,11 +145,13 @@ export function PostForm({ onNavigate }: PostFormProps) {
             <CardContent>
               <div className="space-y-4">
                 {selectedImage ? (
-                  <div className="relative">
-                    <img
+                  <div className="relative h-48">
+                    <Image
                       src={selectedImage}
                       alt="Selected"
-                      className="w-full h-48 object-cover rounded-lg"
+                      fill
+                      sizes="100vw"
+                      className="w-full object-cover rounded-lg"
                     />
                     <Button
                       type="button"
@@ -219,27 +217,6 @@ export function PostForm({ onNavigate }: PostFormProps) {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="price" className="flex items-center gap-2">
-                  <DollarSign size={16} />
-                  価格帯
-                </Label>
-                <Select
-                  value={formData.priceRange}
-                  onValueChange={(value) => setFormData({...formData, priceRange: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="価格帯を選択してください" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priceRanges.map((range) => (
-                      <SelectItem key={range} value={range}>
-                        {range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </CardContent>
           </Card>
 

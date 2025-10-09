@@ -1,17 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, use } from 'react';
-import { StoreDetail } from '@/components/StoreDetail';
-import { createClient } from '@/lib/supabase/client';
-import { Shop } from '../../_lib/types';
-import { useRouter } from 'next/navigation';
-import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
+import React, { useState, useEffect } from "react";
+import { StoreDetail } from "@/components/StoreDetail";
+import { createClient } from "@/lib/supabase/client";
+import { Shop } from "../../_lib/types";
+import { useParams, useRouter } from "next/navigation";
+import { SupabaseClient } from "@supabase/supabase-js"; // Import SupabaseClient type
 
-export default function ShopDetailPage({ params }: { params: { id: string } }) {
-  const { id: shopId } = use(params);
+export default function ShopDetailPage() {
+  // useParamsフックを使ってURLパラメータを取得
+  const params = useParams();
+  // params.idはstring | string[]型なので、stringとして扱う
+  const shopId = Array.isArray(params.id) ? params.id[0] : params.id;
+
   const [store, setStore] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null); // Initialize supabase state
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -25,17 +29,18 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
   }, []);
 
   const handleNavigateBack = () => {
-    router.push('/');
+    router.push("/");
   };
 
   const handleLikeToggle = async (shopId: string, newLikedStatus: boolean) => {
-    if (!currentUserId || !supabase) { // Check if supabase is initialized
+    if (!currentUserId || !supabase) {
+      // Check if supabase is initialized
       alert("いいねするにはログインしてください。");
       return;
     }
 
     // Optimistically update the UI
-    setStore(prevStore => {
+    setStore((prevStore) => {
       if (!prevStore) return null;
       return {
         ...prevStore,
@@ -51,13 +56,14 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
         shop_id: shopId,
       });
       if (error) {
-        if (error.code === '23505') { // Duplicate key error
+        if (error.code === "23505") {
+          // Duplicate key error
           console.warn("User already liked this shop.");
         } else {
           console.error("Error liking shop:", error);
         }
         // Revert optimistic update if there's an error
-        setStore(prevStore => {
+        setStore((prevStore) => {
           if (!prevStore) return null;
           return {
             ...prevStore,
@@ -76,7 +82,7 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
       if (error) {
         console.error("Error unliking shop:", error);
         // Revert optimistic update if there's an error
-        setStore(prevStore => {
+        setStore((prevStore) => {
           if (!prevStore) return null;
           return {
             ...prevStore,
@@ -99,20 +105,27 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
 
       setLoading(true);
 
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       const currentUserId = currentUser?.id;
-      setCurrentUserId(currentUserId); // Update the state here
+      setCurrentUserId(currentUserId || null); // Update the state here
 
       const { data: shopData, error: shopError } = await supabase
-        .from('shops')
-        .select(`
-          id, name, photo_url, url, business_hours, location, category, detailed_category, comments, price, user_id
-        `)
-        .eq('id', shopId)
+        .from("shops")
+        .select(
+          `
+          id, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id,
+          likes(user_id),
+          ratings(rating),
+          reviews(id)
+        `
+        )
+        .eq("id", shopId)
         .single();
 
       if (shopError) {
-        console.error('Error fetching shop:', shopError);
+        console.error("Error fetching shop:", shopError);
         setLoading(false);
         return;
       }
@@ -121,12 +134,16 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
         let profile = null;
         if (shopData.user_id) {
           const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', shopData.user_id)
+            .from("profiles")
+            .select("username, avatar_url")
+            .eq("id", shopData.user_id)
             .single();
           if (profileError) {
-            console.error("Error fetching profile data for user_id:", shopData.user_id, profileError);
+            console.error(
+              "Error fetching profile data for user_id:",
+              shopData.user_id,
+              profileError
+            );
           } else {
             profile = profileData;
           }
@@ -136,28 +153,39 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
         const shopRatings = shopData.ratings || [];
         const shopReviews = shopData.reviews || [];
 
-        const totalRating = shopRatings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0);
-        const averageRating = shopRatings.length > 0 ? totalRating / shopRatings.length : 0;
+        const totalRating = shopRatings.reduce(
+          (sum: number, r: { rating: number | null }) => sum + (r.rating || 0),
+          0
+        );
+        const averageRating =
+          shopRatings.length > 0 ? totalRating / shopRatings.length : 0;
 
         const transformedShop: Shop = {
           id: shopData.id,
           name: shopData.name,
-          imageUrl: shopData.photo_url || '/next.svg',
+          imageUrl: shopData.photo_url || "/next.svg",
           url: shopData.url,
-          hours: shopData.business_hours || 'N/A',
+          hours: shopData.business_hours || "N/A",
           location: shopData.location,
-          category: shopData.category || 'その他',
+          category: shopData.category || "その他",
           detailed_category: shopData.detailed_category,
-          description: shopData.comments || '説明がありません。',
-          price: shopData.price || '¥1,000〜¥2,000',
-          tags: shopData.detailed_category ? shopData.detailed_category.split(',').map((tag: string) => tag.trim()) : [],
+          description: shopData.comments || "説明がありません。",
+          tags: shopData.detailed_category
+            ? shopData.detailed_category
+                .split(",")
+                .map((tag: string) => tag.trim())
+            : [],
           user: {
-            name: profile?.username || 'Unknown User',
-            avatar: profile?.avatar_url || 'https://i.pravatar.cc/64?u=unknown',
-            username: profile?.username || 'unknown_user',
+            username: profile?.username || "unknown_user",
+            avatar_url:
+              profile?.avatar_url || "https://i.pravatar.cc/64?u=unknown",
           },
           likes: shopLikes.length,
-          liked: currentUserId ? shopLikes.some((like: { user_id: string }) => like.user_id === currentUserId) : false,
+          liked: currentUserId
+            ? shopLikes.some(
+                (like: { user_id: string }) => like.user_id === currentUserId
+              )
+            : false,
           rating: parseFloat(averageRating.toFixed(1)),
           reviewCount: shopReviews.length,
         };
@@ -175,7 +203,9 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
   }
 
   if (!store) {
-    return <div className="text-center py-16">お店が見つかりませんでした。</div>;
+    return (
+      <div className="text-center py-16">お店が見つかりませんでした。</div>
+    );
   }
 
   return (

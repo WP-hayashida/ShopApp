@@ -1,4 +1,4 @@
-import { LucideIcon, Coffee, Utensils, ShoppingBag, Home, Heart } from 'lucide-react';
+import { LucideIcon, Coffee, Utensils, ShoppingBag, Home } from 'lucide-react';
 
 interface CategoryConfig {
   icon: LucideIcon;

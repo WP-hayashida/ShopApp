@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 
 // 定数：都道府県リスト
 const prefectures = [
@@ -274,7 +275,7 @@ export default function EditShopPage() {
           <Label htmlFor="photo">写真</Label>
           {initialPhotoUrl && !photo && (
             <div className="relative w-32 h-32 mb-2">
-              <img src={initialPhotoUrl} alt="Current Shop Photo" className="w-full h-full object-cover rounded-md" />
+              <Image src={initialPhotoUrl} alt="Current Shop Photo" fill className="object-cover rounded-md" />
             </div>
           )}
           <Input

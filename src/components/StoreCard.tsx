@@ -1,12 +1,21 @@
-import React from 'react';
-import { Heart, Star, MapPin, Clock, DollarSign, Eye, Share2, Bookmark } from 'lucide-react';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ImageWithFallback } from './figma/ImageWithFallback';
-import { getCategoryConfig } from './CategoryConfig';
-import Link from 'next/link';
+import React from "react";
+import {
+  Heart,
+  Star,
+  MapPin,
+  Clock,
+  DollarSign,
+  Eye,
+  Share2,
+  Bookmark,
+} from "lucide-react";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { getCategoryConfig } from "./CategoryConfig";
+import Link from "next/link";
 
 interface Store {
   id: string;
@@ -17,7 +26,7 @@ interface Store {
   imageUrl: string;
   user: {
     name: string;
-    avatar: string;
+    avatar_url: string;
     username: string;
   };
   description: string;
@@ -44,18 +53,22 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
         {/* Image Section */}
         <div className="relative overflow-hidden">
           <Link href={`/shops/${store.id}`}>
-          <ImageWithFallback
-            src={store.imageUrl}
-            alt={store.name}
-            className="w-full h-48 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
-          />
+            <ImageWithFallback
+              src={store.imageUrl}
+              alt={store.name}
+              className="w-full h-48 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
+            />
           </Link>
-          
+
           {/* Category Badge */}
-          <div className={`absolute top-3 left-3 ${categoryConfig.bgColor} backdrop-blur-sm rounded-md px-2 py-1 border ${categoryConfig.borderColor}`}>
+          <div
+            className={`absolute top-3 left-3 ${categoryConfig.bgColor} backdrop-blur-sm rounded-md px-2 py-1 border ${categoryConfig.borderColor}`}
+          >
             <div className="flex items-center space-x-1">
               <IconComponent className={`size-3 ${categoryConfig.textColor}`} />
-              <span className={`text-xs font-medium ${categoryConfig.textColor}`}>
+              <span
+                className={`text-xs font-medium ${categoryConfig.textColor}`}
+              >
                 {store.category}
               </span>
             </div>
@@ -71,12 +84,12 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
               onLike(store.id);
             }}
           >
-            <Heart 
+            <Heart
               className={`size-4 ${
-                store.liked 
-                  ? 'text-red-500 fill-red-500' 
-                  : 'text-muted-foreground'
-              }`} 
+                store.liked
+                  ? "text-red-500 fill-red-500"
+                  : "text-muted-foreground"
+              }`}
             />
           </Button>
         </div>
@@ -86,22 +99,28 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
           {/* User Info */}
           <div className="flex items-center space-x-3">
             <Avatar className="size-8 border">
-              <AvatarImage src={store.user.avatar} />
-              <AvatarFallback className="text-xs">{store.user.name[0]}</AvatarFallback>
+              <AvatarImage src={store.user.avatar_url || ""} />
+              <AvatarFallback className="text-xs">
+                {store.user.username[0]}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium">{store.user.name}</p>
-              <p className="text-xs text-muted-foreground">@{store.user.username}</p>
+              <p className="text-sm font-medium">{store.user.username}</p>
+              <p className="text-xs text-muted-foreground">
+                @{store.user.username}
+              </p>
             </div>
             <div className="flex items-center space-x-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">
               <Star className="size-3 text-amber-600 fill-amber-600" />
-              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{store.rating}</span>
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                {store.rating}
+              </span>
             </div>
           </div>
 
           {/* Store Info */}
           <div className="space-y-2">
-            <Link 
+            <Link
               href={`/shops/${store.id}`}
               className="font-semibold text-lg leading-tight cursor-pointer hover:text-foreground/80 transition-colors"
             >
@@ -125,7 +144,9 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
                 </div>
                 <div className="flex items-center space-x-1">
                   <DollarSign className="size-3" />
-                  <span className="font-medium text-foreground">{store.price}</span>
+                  <span className="font-medium text-foreground">
+                    {store.price}
+                  </span>
                 </div>
               </div>
             </div>
@@ -133,9 +154,9 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
             {/* Tags */}
             <div className="flex flex-wrap gap-1">
               {store.tags.slice(0, 3).map((tag) => (
-                <Badge 
+                <Badge
                   key={tag}
-                  variant="outline" 
+                  variant="outline"
                   className="text-xs border-border/60 text-muted-foreground"
                 >
                   #{tag}
@@ -147,11 +168,15 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
           {/* Actions */}
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <div className="flex items-center space-x-4">
-              <button 
+              <button
                 className="flex items-center space-x-1 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => onLike(store.id)}
               >
-                <Heart className={`size-4 ${store.liked ? 'text-red-500 fill-red-500' : ''}`} />
+                <Heart
+                  className={`size-4 ${
+                    store.liked ? "text-red-500 fill-red-500" : ""
+                  }`}
+                />
                 <span className="text-sm">{store.likes}</span>
               </button>
 
@@ -162,11 +187,19 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
             </div>
 
             <div className="flex items-center space-x-1">
-              <Button variant="ghost" size="icon" className="size-8 hover:bg-muted/50">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 hover:bg-muted/50"
+              >
                 <Share2 className="size-4" />
               </Button>
-              
-              <Button variant="ghost" size="icon" className="size-8 hover:bg-muted/50">
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 hover:bg-muted/50"
+              >
                 <Bookmark className="size-4" />
               </Button>
             </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import ShopList from "@/app/(features)/_components/ShopList";
 import { Shop } from "@/app/(features)/_lib/types";
 import {
@@ -44,7 +44,10 @@ export default function FilterableShopList({
   isSearching = false, // Destructure isSearching with default
 }: FilterableShopListProps) {
   // ステート変数の定義
-  const [searchControlsFilters, setSearchControlsFilters] = useState<SearchFilters>(defaultSearchControlsFilters);
+  const [searchControlsFilters, setSearchControlsFilters] = useState<SearchFilters>({
+    ...defaultSearchControlsFilters,
+    keyword: headerKeyword,
+  });
   const [expanded, setExpanded] = useState(false);
 
   // カテゴリバッジクリック時のハンドラ (updates searchControlsFilters)
@@ -57,7 +60,6 @@ export default function FilterableShopList({
 
   // フィルターとソートが適用された店舗リストをメモ化
   const filteredAndSortedShops = useMemo(() => {
-    // console.log("FilterableShopList: Filtering with headerKeyword=", headerKeyword, "and searchControlsFilters.keyword=", searchControlsFilters.keyword); // Removed temporary log
     let filtered = [...initialShops];
 
     // SearchControlsからのキーワードによるフィルタリング
@@ -111,7 +113,7 @@ export default function FilterableShopList({
     }
 
     return filtered;
-  }, [initialShops, headerKeyword, searchControlsFilters]);
+  }, [initialShops, searchControlsFilters]); // Removed headerKeyword from dependencies
 
   // 表示する店舗リストをメモ化（「さらに表示」の状態を考慮）
   const shopsToShow = useMemo(() => {

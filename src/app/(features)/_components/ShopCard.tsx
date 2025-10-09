@@ -2,24 +2,22 @@
 
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
-import { Heart, Star, MapPin, Clock, DollarSign, Eye, Share2, Bookmark } from 'lucide-react';
+import { Heart, Star, MapPin, Clock, Eye, Share2, Bookmark } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card"; // Adjusted path
 import { Button } from "@/components/ui/button"; // Adjusted path
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback"; // Adjusted path
 import { getCategoryConfig } from "@/components/CategoryConfig"; // Adjusted path
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js"; // Renamed to avoid conflict with our User interface
 
 interface ShopCardProps {
   shop: Shop; // 表示するお店の情報
-  editHref?: string; // 編集ページへのリンク（オプショナル）
   onNavigate: (page: 'detail', shop: Shop) => void; // Added for consistency with StoreCard, though we'll use Link
 }
 
-const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref, onNavigate }) => {
+const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
   const supabase = createClient();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isLiked, setIsLiked] = useState(shop.liked); // Initialize from shop.liked
@@ -123,11 +121,11 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref, onNavigate }) => {
           {/* User Info */}
           <div className="flex items-center space-x-3">
             <Avatar className="size-8 border">
-              <AvatarImage src={shop.user.avatar} />
-              <AvatarFallback className="text-xs">{shop.user.name[0]}</AvatarFallback>
+              <AvatarImage src={shop.user.avatar_url || ""} />
+              <AvatarFallback className="text-xs">{shop.user.username ? shop.user.username[0] : 'U'}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium">{shop.user.name}</p>
+              <p className="text-sm font-medium">{shop.user.username}</p>
               <p className="text-xs text-muted-foreground"> @{shop.user.username}</p>
             </div>
             <div className="flex items-center space-x-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">
@@ -159,10 +157,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, editHref, onNavigate }) => {
                 <div className="flex items-center space-x-2">
                   <Clock className="size-3" />
                   <span>{shop.hours}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <DollarSign className="size-3" />
-                  <span className="font-medium text-foreground">{shop.price}</span>
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ import FilterableShopList from "@/app/(features)/_components/FilterableShopList"
 import { useRouter } from "next/navigation";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { useSearch } from "@/context/SearchContext";
+import { mapSupabaseShopToShop, RawSupabaseShop } from "../_lib/shopMapper"; // Import the mapper function
 
 export default function HomePageClient() {
   const [shops, setShops] = useState<Shop[]>([]);
@@ -15,245 +16,70 @@ export default function HomePageClient() {
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const router = useRouter();
 
-    const { searchTerm } = useSearch();
+  const { searchTerm } = useSearch();
 
-  
+  const handleNavigate = (page: "detail", shop: Shop) => {
+    if (page === "detail") {
+      router.push(`/shops/${shop.id}`);
+    }
+  };
 
-    const handleNavigate = (page: "detail", shop: Shop) => {
+  useEffect(() => {
+    const initSupabase = async () => {
+      const client = createClient();
+      setSupabase(client);
+    };
+    initSupabase();
+  }, []);
 
-      if (page === "detail") {
+  useEffect(() => {
+    if (!supabase) return;
 
-        router.push(`/shops/${shop.id}`);
+    const getShops = async () => {
+      setLoading(true);
+      setIsSearching(true); // Set searching to true
+            const { data: { user: currentUser }, } = await supabase.auth.getUser();
+            const currentUserId = currentUser?.id || null; // Convert to string | null
 
+      let query = supabase
+        .from("shops")
+        .select(
+          `
+          id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id,
+          likes(user_id),
+          ratings(rating),
+          reviews(id)
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (searchTerm) {
+        const lowercasedSearchTerm = searchTerm.toLowerCase();
+        query = query.or(
+          `name.ilike.%${lowercasedSearchTerm}%,detailed_category.ilike.%${lowercasedSearchTerm}%,comments.ilike.%${lowercasedSearchTerm}%`
+        );
       }
 
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching shops:", error);
+        setShops([]); // エラー時は空配列をセット
+      } else if (data) { // dataが存在する場合のみ処理
+        const shopsDataPromises = data.map(async (shop: RawSupabaseShop) => {
+          return mapSupabaseShopToShop(shop, supabase, currentUserId);
+        });
+        const shopsData = await Promise.all(shopsDataPromises);
+        setShops(shopsData);
+      } else {
+        setShops([]); // dataがnullやundefinedの場合も空配列をセット
+      }
+      setLoading(false);
+      setIsSearching(false); // Set searching to false
     };
 
-  
-
-    useEffect(() => {
-
-      const initSupabase = async () => {
-
-        const client = createClient();
-
-        setSupabase(client);
-
-      };
-
-      initSupabase();
-
-    }, []);
-
-  
-
-    useEffect(() => {
-
-      if (!supabase) return;
-
-  
-
-      const getShops = async () => {
-
-        setLoading(true);
-
-        setIsSearching(true); // Set searching to true
-
-        const { data: { user: currentUser }, } = await supabase.auth.getUser();
-
-        const currentUserId = currentUser?.id;
-
-  
-
-        let query = supabase
-
-          .from("shops")
-
-          .select(
-
-            `
-
-            id, name, photo_url, url, business_hours, location, category, detailed_category, comments, price, user_id,
-
-            likes(user_id),
-
-            ratings(rating),
-
-            reviews(id)
-
-          `
-
-          )
-
-          .order("created_at", { ascending: false });
-
-  
-
-        if (searchTerm) {
-
-          const lowercasedSearchTerm = searchTerm.toLowerCase();
-
-          query = query.or(`name.ilike.%${lowercasedSearchTerm}%,detailed_category.ilike.%${lowercasedSearchTerm}%,comments.ilike.%${lowercasedSearchTerm}%`);
-
-        }
-
-  
-
-        const { data, error } = await query;
-
-  
-
-        if (error) {
-
-          console.error("Error fetching shops:", error);
-
-        } else {
-
-          const shopsDataPromises = data.map(async (shop: any) => {
-
-            let ownerUser = null;
-
-            if (shop.user_id) {
-
-              const { data: profileData, error: profileError } = await supabase
-
-                .from("profiles")
-
-                .select("username, avatar_url")
-
-                .eq("id", shop.user_id)
-
-                .single();
-
-              if (profileError) {
-
-                console.error(
-
-                  "Error fetching profile data for user_id:",
-
-                  shop.user_id,
-
-                  profileError
-
-                );
-
-              } else {
-
-                ownerUser = profileData;
-
-              }
-
-            }
-
-  
-
-            const shopLikes = shop.likes || [];
-
-            const shopRatings = shop.ratings || [];
-
-            const shopReviews = shop.reviews || [];
-
-  
-
-            const totalRating = shopRatings.reduce(
-
-              (sum: number, r: { rating: number }) => sum + r.rating,
-
-              0
-
-            );
-
-            const averageRating = (
-
-              shopRatings.length > 0 ? totalRating / shopRatings.length : 0
-
-            );
-
-  
-
-            return {
-
-              id: shop.id,
-
-              name: shop.name,
-
-              imageUrl: shop.photo_url || "/next.svg",
-
-              url: shop.url,
-
-              hours: shop.business_hours || "N/A",
-
-              location: shop.location,
-
-              category: shop.category,
-
-              detailed_category: shop.detailed_category,
-
-              description: shop.comments || "No description provided.",
-
-              price: shop.price || "N/A",
-
-              tags: shop.detailed_category
-
-                ? shop.detailed_category
-
-                    .split(",")
-
-                    .map((tag: string) => tag.trim())
-
-                : [],
-
-              user: {
-
-                name: ownerUser?.username || "Unknown User",
-
-                avatar:
-
-                  ownerUser?.avatar_url ||
-
-                  "https://avatars.githubusercontent.com/u/1?v=4",
-
-                username: ownerUser?.username || "unknown",
-
-              },
-
-              likes: shopLikes.length,
-
-              liked: currentUserId
-
-                ? shopLikes.some(
-
-                    (like: { user_id: string }) => like.user_id === currentUserId
-
-                  )
-
-                : false,
-
-              rating: parseFloat(averageRating.toFixed(1)),
-
-              reviewCount: shopReviews.length,
-
-            };
-
-          });
-
-          const shopsData = await Promise.all(shopsDataPromises);
-
-          setShops(shopsData);
-
-        }
-
-        setLoading(false);
-
-        setIsSearching(false); // Set searching to false
-
-      };
-
-  
-
-      getShops();
-
-    }, [supabase, searchTerm]); // Add searchTerm to dependencies
+    getShops();
+  }, [supabase, searchTerm]);
 
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -290,7 +116,6 @@ export default function HomePageClient() {
 
   return (
     <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
-      {console.log("HomePageClient: searchTerm being passed to FilterableShopList", searchTerm)} {/* Log before passing */}
       <FilterableShopList
         key={searchTerm} // Add key prop to force remount on searchTerm change
         initialShops={shops}

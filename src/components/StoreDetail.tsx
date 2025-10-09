@@ -1,36 +1,16 @@
 import React, { useState } from 'react';
 import Image from 'next/image'; // Import Image component
-import { ArrowLeft, Heart, Share2, MapPin, Clock, DollarSign, Star, ExternalLink, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, MapPin, Star, ExternalLink, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Separator } from './ui/separator';
 import { Textarea } from './ui/textarea';
-
-interface Store {
-  id: string;
-  name: string;
-  category: string;
-  rating: number;
-  reviewCount: number;
-  imageUrl: string;
-  user: {
-    name: string;
-    avatar: string;
-    username: string;
-  };
-  description: string;
-  location: string;
-  hours: string;
-  price: string;
-  tags: string[];
-  liked: boolean;
-  likes: number;
-}
+import { Shop } from '@/app/(features)/_lib/types';
 
 interface StoreDetailProps {
-  store: Store;
+  store: Shop;
   onNavigate: (page: 'home' | 'mypage') => void;
   onLikeToggle: (shopId: string, newLikedStatus: boolean) => void; // Added onLikeToggle prop
 }
@@ -42,13 +22,13 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
   const [comments] = useState([
     {
       id: '1',
-      user: { name: 'グルメ太郎', avatar: 'https://i.pravatar.cc/64?u=gourmet_taro' },
+      user: { username: 'グルメ太郎', avatar_url: 'https://i.pravatar.cc/64?u=gourmet_taro' },
       text: 'ここのラーメン本当に美味しいです！スープが濃厚で麺との相性も抜群でした。',
       timestamp: '2時間前',
     },
     {
       id: '2',
-      user: { name: '食べ歩き花子', avatar: 'https://i.pravatar.cc/64?u=tabearuki_hanako' },
+      user: { username: '食べ歩き花子', avatar_url: 'https://i.pravatar.cc/64?u=tabearuki_hanako' },
       text: 'チャーシューがとろとろで最高でした。また行きたいです！',
       timestamp: '5時間前',
     },
@@ -166,40 +146,14 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
 
                   <Separator />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="mt-1 text-muted-foreground flex-shrink-0" size={16} />
-                      <div>
-                        <div className="font-medium">場所</div>
-                        <div className="text-muted-foreground">{store.location}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Clock className="mt-1 text-muted-foreground flex-shrink-0" size={16} />
-                      <div>
-                        <div className="font-medium">営業時間</div>
-                        <div className="text-muted-foreground">{store.hours}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <DollarSign className="mt-1 text-muted-foreground flex-shrink-0" size={16} />
-                      <div>
-                        <div className="font-medium">価格帯</div>
-                        <div className="text-muted-foreground">{store.price}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={store.user.avatar} />
-                        <AvatarFallback>{store.user.name[0]}</AvatarFallback>
+                        <AvatarImage src={store.user.avatar_url || ""} />
+                        <AvatarFallback>{store.user.username[0]}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{store.user.name}</div>
+                        <div className="font-medium">{store.user.username}</div>
                         <div className="text-sm text-muted-foreground">@{store.user.username}</div>
                       </div>
                     </div>
@@ -240,12 +194,12 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
                     {comments.map((comment) => (
                       <div key={comment.id} className="flex gap-3">
                         <Avatar className="w-8 h-8">
-                          <AvatarImage src={comment.user.avatar} />
-                          <AvatarFallback>{comment.user.name[0]}</AvatarFallback>
+                          <AvatarImage src={comment.user.avatar_url || ""} />
+                          <AvatarFallback>{comment.user.username[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{comment.user.name}</span>
+                            <span className="font-medium text-sm">{comment.user.username}</span>
                             <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
                           </div>
                           <p className="text-sm">{comment.text}</p>
