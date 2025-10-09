@@ -1,9 +1,10 @@
 'use client'; // Add use client directive
 
-import type { Metadata } from "next";
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
+import { Header } from "@/components/Header";
+import { SearchProvider } from "@/context/SearchContext"; // Import SearchProvider
 
 // フォントの設定
 const geistSans = Geist({
@@ -31,8 +32,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Header />
-        <main>{children}</main>
+        <SearchProvider>
+          <Header />
+          <main>{children}</main>
+        </SearchProvider>
       </body>
     </html>
   );
