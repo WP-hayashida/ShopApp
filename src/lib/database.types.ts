@@ -1,13 +1,11 @@
-// このファイルはSupabaseのCLIによって自動生成されたものです。
-// 手動で編集しないでください。
-
-export type Json = 
+export type Json =
   | string
   | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
   | Json[]
+
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -69,6 +67,70 @@ export type Database = {
         }
         Relationships: []
       }
+      ratings: {
+        Row: {
+          created_at: string | null
+          id: string
+          rating: number | null
+          shop_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          shop_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          shop_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          shop_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          shop_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          shop_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops: {
         Row: {
           business_hours: string | null
@@ -79,7 +141,12 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          owner_id: string | null
           photo_url: string | null
+          price: string | null
+          rating: number | null
+          review_count: number | null
+          tags: string[] | null
           url: string | null
           user_id: string | null
         }
@@ -92,7 +159,12 @@ export type Database = {
           id?: string
           location?: string | null
           name: string
+          owner_id?: string | null
           photo_url?: string | null
+          price?: string | null
+          rating?: number | null
+          review_count?: number | null
+          tags?: string[] | null
           url?: string | null
           user_id?: string | null
         }
@@ -105,7 +177,12 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string
+          owner_id?: string | null
           photo_url?: string | null
+          price?: string | null
+          rating?: number | null
+          review_count?: number | null
+          tags?: string[] | null
           url?: string | null
           user_id?: string | null
         }
@@ -131,7 +208,12 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          owner_id: string | null
           photo_url: string | null
+          price: string | null
+          rating: number | null
+          review_count: number | null
+          tags: string[] | null
           url: string | null
           user_id: string | null
         }[]

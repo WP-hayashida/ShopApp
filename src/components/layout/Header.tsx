@@ -1,11 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
+import {
+  House,
+  SquarePen,
+  LogOut, // Added LogOut icon
+  Search, // Add Search icon
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input"; // Import Input component
+import { useSearch } from "@/context/SearchContext"; // Import useSearch hook
 
 /**
  * ヘッダーコンポーネント
@@ -16,6 +32,20 @@ const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
   const [loading, setLoading] = useState(true); // ローディング状態
   const supabase = useMemo(() => createClient(), []); // Supabaseクライアントをメモ化
+
+  const { setSearchTerm } = useSearch();
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+
+  // デバウンス処理
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(localSearchTerm);
+    }, 500); // 500msのデバウンス
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [localSearchTerm, setSearchTerm]);
 
   // 副作用フック：ユーザー情報を取得し、認証状態の変更を監視
   useEffect(() => {
@@ -45,7 +75,7 @@ const Header: React.FC = () => {
   // サインイン処理
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -54,7 +84,7 @@ const Header: React.FC = () => {
 
   // サインアウト処理
   const handleSignOut = async () => {
-    if (window.confirm('本当にサインアウトしますか？')) {
+    if (window.confirm("本当にサインアウトしますか？")) {
       await supabase.auth.signOut();
       // サインアウト状態を反映するためにページをリロード
       window.location.reload();
@@ -66,44 +96,74 @@ const Header: React.FC = () => {
       <Link href="/" className="text-2xl font-bold text-white">
         ShopShare
       </Link>
-      <nav>
+      <nav className="flex items-center space-x-4">
+        <div className="relative flex items-center">
+          <Input
+            type="text"
+            placeholder="お店を検索..."
+            className="pl-8 pr-2 py-1 rounded-md bg-gray-800 text-gray-100 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
+          />
+          <Search className="absolute left-2 h-4 w-4 text-gray-400" />
+        </div>
         <ul className="flex space-x-2 items-center">
           <li>
             <Link href="/">
-              <Button variant="ghost">Home</Button>
+              <Button variant="ghost">
+                <House className="mr-2 h-4 w-4" />
+                Home
+              </Button>
             </Link>
           </li>
           <li>
             <Link href="/submit-shop">
-              <Button variant="ghost">Add Shop</Button>
-            </Link>
-          </li>
-          <li>
-            <Link href="/my-page">
-              <Button variant="ghost">My Page</Button>
-            </Link>
-          </li>
-          <li>
-            {/* ローディング中でなく、ユーザーが存在する場合にユーザー情報を表示 */}
-            {!loading && user ? (
-              <Button
-                onClick={handleSignOut}
-                variant="ghost"
-                className="flex items-center space-x-2"
-              >
-                {user.user_metadata?.avatar_url && (
-                  <Image
-                    src={user.user_metadata.avatar_url}
-                    alt="User Avatar"
-                    width={32}
-                    height={32}
-                    className="rounded-full"
-                  />
-                )}
-                <span>{user.user_metadata?.name || user.email}</span>
+              <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white">
+                <SquarePen className="mr-2 h-4 w-4" />
+                Post
               </Button>
-            ) : (
-              <Button onClick={handleSignIn}>Sign In with Google</Button>
+            </Link>
+          </li>
+          <li>
+            {!loading && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt="@shadcn" />
+                      <AvatarFallback>{user?.user_metadata?.name?.[0] || user?.email?.[0] || "G"}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  {user ? (
+                    <>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{user.user_metadata?.name || "User"}</p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/my-page">
+                          My Page
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={handleSignIn}>
+                      Sign In
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </li>
         </ul>
