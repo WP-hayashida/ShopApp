@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -17,22 +17,76 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
+import { ShopFormInput, ShopPayload } from "../../../_lib/types"; // Import new types
+import { transformFormInputToShopPayload } from "../../../_lib/shopUtils"; // Import helper function
 
 // 定数：都道府県リスト
 const prefectures = [
-  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
-  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
-  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
-  "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
-  "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
-  "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
-  "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"
+  "北海道",
+  "青森県",
+  "岩手県",
+  "宮城県",
+  "秋田県",
+  "山形県",
+  "福島県",
+  "茨城県",
+  "栃木県",
+  "群馬県",
+  "埼玉県",
+  "千葉県",
+  "東京都",
+  "神奈川県",
+  "新潟県",
+  "富山県",
+  "石川県",
+  "福井県",
+  "山梨県",
+  "長野県",
+  "岐阜県",
+  "静岡県",
+  "愛知県",
+  "三重県",
+  "滋賀県",
+  "京都府",
+  "大阪府",
+  "兵庫県",
+  "奈良県",
+  "和歌山県",
+  "鳥取県",
+  "島根県",
+  "岡山県",
+  "広島県",
+  "山口県",
+  "徳島県",
+  "香川県",
+  "愛媛県",
+  "高知県",
+  "福岡県",
+  "佐賀県",
+  "長崎県",
+  "熊本県",
+  "大分県",
+  "宮崎県",
+  "鹿児島県",
+  "沖縄県",
 ];
 
 // 定数：カテゴリリスト
 const categories = [
-  "カフェ", "レストラン", "ラーメン", "バー", "居酒屋", "焼肉", "寿司",
-  "パン屋", "スイーツ", "雑貨屋", "書店", "アパレル", "美容室", "その他"
+  "カフェ",
+  "レストラン",
+  "ラーメン",
+  "バー",
+  "居酒屋",
+  "焼肉",
+  "寿司",
+  "パン屋",
+  "スイーツ",
+  "雑貨屋",
+  "書店",
+  "アパレル",
+  "美容室",
+  "その他",
 ];
 
 /**
@@ -49,23 +103,55 @@ export default function EditShopPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [initialPhotoUrl, setInitialPhotoUrl] = useState<string | null>(null);
 
-  // フォームの各フィールドのステート
-  const [name, setName] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [url, setUrl] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [location, setLocation] = useState(prefectures[12]); // デフォルトは東京
-  const [category, setCategory] = useState("");
-  const [detailedCategory, setDetailedCategory] = useState("");
-  const [comments, setComments] = useState("");
+  // フォームの各フィールドのステートをShopFormInput型で一元管理
+  const [formData, setFormData] = useState<ShopFormInput>({
+    name: "",
+    photo: null,
+    url: "",
+    startTime: "",
+    endTime: "",
+    location: prefectures[12], // デフォルトは東京
+    category: "",
+    detailedCategory: "",
+    comments: "",
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // フォーム入力変更ハンドラ
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  // Selectコンポーネント用の変更ハンドラ
+  const handleSelectChange = (id: keyof ShopFormInput, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  // ファイル入力変更ハンドラ
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      photo: e.target.files ? e.target.files[0] : null,
+    }));
+  };
 
   // 副作用フック：ユーザーと既存の店舗情報を取得してフォームに設定
   useEffect(() => {
     const getUserAndShop = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
 
       if (!user) {
@@ -88,18 +174,20 @@ export default function EditShopPage() {
       }
 
       // フォームに既存のデータを設定
-      setName(shopData.name ?? "");
+      const [start, end] = shopData.business_hours?.split(" - ") || ["", ""];
+
+      setFormData({
+        name: shopData.name ?? "",
+        photo: null, // 既存の写真はphotoUrlで管理
+        url: shopData.url ?? "",
+        startTime: start,
+        endTime: end,
+        location: shopData.location ?? prefectures[12],
+        category: shopData.category?.[0] ?? "", // 配列の最初の要素を設定
+        detailedCategory: shopData.detailed_category ?? "",
+        comments: shopData.comments ?? "",
+      });
       setInitialPhotoUrl(shopData.photo_url);
-      setUrl(shopData.url ?? "");
-      if (shopData.business_hours) {
-        const [start, end] = shopData.business_hours.split(" - ");
-        setStartTime(start || "");
-        setEndTime(end || "");
-      }
-      setLocation(shopData.location ?? prefectures[12]);
-      setCategory(shopData.category ?? "");
-      setDetailedCategory(shopData.detailed_category ?? "");
-      setComments(shopData.comments ?? "");
 
       setLoadingUser(false);
     };
@@ -118,7 +206,7 @@ export default function EditShopPage() {
 
   // 入力フィールドでEnterキーが押されたときにフォームが送信されるのを防ぐ
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
       e.preventDefault();
     }
   };
@@ -139,12 +227,12 @@ export default function EditShopPage() {
       let photoUrl: string | null = initialPhotoUrl;
 
       // 新しい写真が選択された場合、アップロード処理を行う
-      if (photo) {
-        const fileExt = photo.name.split('.').pop();
+      if (formData.photo) {
+        const fileExt = formData.photo.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('shop-photos')
-          .upload(fileName, photo);
+          .from("shop-photos")
+          .upload(fileName, formData.photo);
 
         if (uploadError) {
           throw new Error(
@@ -153,38 +241,29 @@ export default function EditShopPage() {
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from('shop-photos')
+          .from("shop-photos")
           .getPublicUrl(uploadData.path);
         photoUrl = publicUrlData.publicUrl;
       }
 
-      const businessHours =
-        startTime && endTime ? `${startTime} - ${endTime}` : "";
-      
-      // 更新する店舗データを作成
-      const shopData = {
-        name,
-        photo_url: photoUrl,
-        url,
-        business_hours: businessHours,
-        location,
-        category,
-        detailed_category: detailedCategory,
-        comments,
-      };
+      // フォームデータをSupabaseペイロードに変換
+      const shopPayload: ShopPayload = transformFormInputToShopPayload(
+        formData,
+        photoUrl
+      );
 
       // `shops`テーブルのデータを更新
       const { error: updateError } = await supabase
-        .from('shops')
-        .update(shopData)
-        .eq('id', shopId);
+        .from("shops")
+        .update(shopPayload)
+        .eq("id", shopId);
 
       if (updateError) {
         throw new Error(`投稿の更新に失敗しました: ${updateError.message}`);
       }
-
+      alert("投稿が正常に更新されました。");
     } catch (err) {
-      let message = '投稿の更新中にエラーが発生しました。';
+      let message = "投稿の更新中にエラーが発生しました。";
       if (err instanceof Error) {
         message = err.message;
       }
@@ -223,7 +302,11 @@ export default function EditShopPage() {
       alert("ユーザーが認証されていません。");
       return;
     }
-    if (!window.confirm("本当にこの投稿を削除しますか？この操作は元に戻せません。")) {
+    if (
+      !window.confirm(
+        "本当にこの投稿を削除しますか？この操作は元に戻せません。"
+      )
+    ) {
       return;
     }
 
@@ -232,9 +315,9 @@ export default function EditShopPage() {
 
     try {
       const { error: deleteError } = await supabase
-        .from('shops')
+        .from("shops")
         .delete()
-        .eq('id', shopId);
+        .eq("id", shopId);
 
       if (deleteError) {
         throw new Error(`投稿の削除に失敗しました: ${deleteError.message}`);
@@ -243,7 +326,7 @@ export default function EditShopPage() {
       alert("投稿が削除されました。");
       router.push("/my-page"); // マイページにリダイレクト
     } catch (err) {
-      let message = '投稿の削除中にエラーが発生しました。';
+      let message = "投稿の削除中にエラーが発生しました。";
       if (err instanceof Error) {
         message = err.message;
       }
@@ -258,14 +341,18 @@ export default function EditShopPage() {
   return (
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">ショップを編集</h1>
-      <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        className="space-y-6"
+      >
         {/* 店舗名 */}
         <div className="space-y-2">
           <Label htmlFor="name">店舗名</Label>
           <Input
             id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={formData.name}
+            onChange={handleInputChange}
             placeholder="例: Geminiカフェ"
             required
           />
@@ -273,17 +360,20 @@ export default function EditShopPage() {
         {/* 写真 */}
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
-          {initialPhotoUrl && !photo && (
+          {initialPhotoUrl && !formData.photo && (
             <div className="relative w-32 h-32 mb-2">
-              <Image src={initialPhotoUrl} alt="Current Shop Photo" fill className="object-cover rounded-md" />
+              <Image
+                src={initialPhotoUrl}
+                alt="Current Shop Photo"
+                fill
+                className="object-cover rounded-md"
+              />
             </div>
           )}
           <Input
             id="photo"
             type="file"
-            onChange={(e) =>
-              setPhoto(e.target.files ? e.target.files[0] : null)
-            }
+            onChange={handleFileChange}
             accept="image/*"
           />
         </div>
@@ -293,8 +383,8 @@ export default function EditShopPage() {
           <Input
             id="url"
             type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            value={formData.url}
+            onChange={handleInputChange}
             placeholder="https://example.com"
           />
         </div>
@@ -304,21 +394,26 @@ export default function EditShopPage() {
           <div className="flex items-center space-x-2">
             <Input
               type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              id="startTime"
+              value={formData.startTime}
+              onChange={handleInputChange}
             />
             <span>-</span>
             <Input
               type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              id="endTime"
+              value={formData.endTime}
+              onChange={handleInputChange}
             />
           </div>
         </div>
         {/* 場所 */}
         <div className="space-y-2">
           <Label htmlFor="location">場所</Label>
-          <Select onValueChange={setLocation} value={location}>
+          <Select
+            onValueChange={(value) => handleSelectChange("location", value)}
+            value={formData.location}
+          >
             <SelectTrigger id="location">
               <SelectValue placeholder="都道府県を選択" />
             </SelectTrigger>
@@ -334,7 +429,10 @@ export default function EditShopPage() {
         {/* カテゴリ */}
         <div className="space-y-2">
           <Label htmlFor="category">カテゴリ</Label>
-          <Select onValueChange={setCategory} value={category}>
+          <Select
+            onValueChange={(value) => handleSelectChange("category", value)}
+            value={formData.category}
+          >
             <SelectTrigger id="category">
               <SelectValue placeholder="カテゴリを選択" />
             </SelectTrigger>
@@ -352,8 +450,8 @@ export default function EditShopPage() {
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
           <Input
             id="detailedCategory"
-            value={detailedCategory}
-            onChange={(e) => setDetailedCategory(e.target.value)}
+            value={formData.detailedCategory}
+            onChange={handleInputChange}
             placeholder="例: スペシャルティコーヒー"
           />
         </div>
@@ -362,14 +460,14 @@ export default function EditShopPage() {
           <Label htmlFor="comments">コメント</Label>
           <Textarea
             id="comments"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
+            value={formData.comments}
+            onChange={handleInputChange}
             placeholder="お店の雰囲気やおすすめメニューなどを記入してください"
           />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? '更新中...' : '更新する'}
+          {loading ? "更新中..." : "更新する"}
         </Button>
       </form>
 
@@ -378,9 +476,11 @@ export default function EditShopPage() {
       {/* 危険な操作ゾーン */}
       <section>
         <h2 className="text-2xl font-bold text-red-600 mb-4">危険な操作</h2>
-        <p className="text-gray-700 mb-4">このショップの投稿を完全に削除します。この操作は元に戻せません。</p>
+        <p className="text-gray-700 mb-4">
+          このショップの投稿を完全に削除します。この操作は元に戻せません。
+        </p>
         <Button variant="destructive" onClick={handleDelete} disabled={loading}>
-          {loading ? '削除中...' : '投稿を削除する'}
+          {loading ? "削除中..." : "投稿を削除する"}
         </Button>
       </section>
     </div>

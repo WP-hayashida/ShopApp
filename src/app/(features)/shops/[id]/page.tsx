@@ -115,7 +115,7 @@ export default function ShopDetailPage() {
         .from("shops")
         .select(
           `
-          id, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id,
+          id, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
           likes(user_id),
           ratings(rating),
           reviews(id)
@@ -164,11 +164,11 @@ export default function ShopDetailPage() {
           id: shopData.id,
           name: shopData.name,
           imageUrl: shopData.photo_url || "/next.svg",
-          url: shopData.url,
+          url: shopData.url || "",
           hours: shopData.business_hours || "N/A",
-          location: shopData.location,
-          category: shopData.category || "その他",
-          detailed_category: shopData.detailed_category,
+          location: shopData.location || "",
+          category: shopData.category || [], // Default to empty array
+          detailed_category: shopData.detailed_category || "",
           description: shopData.comments || "説明がありません。",
           tags: shopData.detailed_category
             ? shopData.detailed_category
@@ -188,6 +188,8 @@ export default function ShopDetailPage() {
             : false,
           rating: parseFloat(averageRating.toFixed(1)),
           reviewCount: shopReviews.length,
+          searchable_categories_text:
+            shopData.searchable_categories_text ?? null,
         };
         setStore(transformedShop);
       }

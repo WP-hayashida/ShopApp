@@ -134,7 +134,7 @@ export type Database = {
       shops: {
         Row: {
           business_hours: string | null
-          category: string | null
+          category: string[] | null
           comments: string | null
           created_at: string
           detailed_category: string | null
@@ -146,13 +146,14 @@ export type Database = {
           price: string | null
           rating: number | null
           review_count: number | null
+          searchable_categories_text: string | null
           tags: string[] | null
           url: string | null
           user_id: string | null
         }
         Insert: {
           business_hours?: string | null
-          category?: string | null
+          category?: string[] | null
           comments?: string | null
           created_at?: string
           detailed_category?: string | null
@@ -164,13 +165,14 @@ export type Database = {
           price?: string | null
           rating?: number | null
           review_count?: number | null
+          searchable_categories_text?: string | null
           tags?: string[] | null
           url?: string | null
           user_id?: string | null
         }
         Update: {
           business_hours?: string | null
-          category?: string | null
+          category?: string[] | null
           comments?: string | null
           created_at?: string
           detailed_category?: string | null
@@ -182,6 +184,7 @@ export type Database = {
           price?: string | null
           rating?: number | null
           review_count?: number | null
+          searchable_categories_text?: string | null
           tags?: string[] | null
           url?: string | null
           user_id?: string | null
@@ -195,13 +198,13 @@ export type Database = {
     Functions: {
       get_shops_sorted_by_likes: {
         Args: {
-          category_filter: string
+          category_filter: string[] | null
           keyword: string
           location_filter: string
         }
         Returns: {
           business_hours: string | null
-          category: string | null
+          category: string[] | null
           comments: string | null
           created_at: string
           detailed_category: string | null
@@ -213,6 +216,7 @@ export type Database = {
           price: string | null
           rating: number | null
           review_count: number | null
+          searchable_categories_text: string | null
           tags: string[] | null
           url: string | null
           user_id: string | null
@@ -240,23 +244,24 @@ export type Database = {
       }
       search_shops: {
         Args: {
-          category_filter: string
+          category_filter: string[] | null
           keyword: string
           location_filter: string
         }
         Returns: {
-          business_hours: string
-          category: string
-          comments: string
+          business_hours: string | null
+          category: string[] | null
+          comments: string | null
           created_at: string
-          detailed_category: string
+          detailed_category: string | null
           id: string
-          like_count: number
-          location: string
+          like_count: number | null
+          location: string | null
           name: string
-          photo_url: string
-          url: string
-          user_id: string
+          photo_url: string | null
+          url: string | null
+          user_id: string | null
+          searchable_categories_text: string | null
         }[]
       }
       set_limit: {

@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
-  TooltipProps as RechartsTooltipProps,
   Legend as RechartsLegend,
   LegendPayload,
 } from "recharts";

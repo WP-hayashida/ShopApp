@@ -10,13 +10,14 @@ export interface RawSupabaseShop {
   url: string | null;
   business_hours: string | null;
   location: string | null;
-  category: string | null;
+  category: string[] | null;
   detailed_category: string | null;
   comments: string | null;
   user_id: string | null;
   likes: { user_id: string }[];
   ratings: { rating: number | null }[];
   reviews: { id: string }[];
+  searchable_categories_text: string | null; // Add this line
 }
 
 /**
@@ -37,7 +38,7 @@ export async function mapSupabaseShopToShop(
       .from("profiles")
       .select("username, avatar_url")
       .eq("id", rawShop.user_id)
-      .single();
+      .maybeSingle();
     if (profileError) {
       console.error(
         "Error fetching profile data for user_id:",
@@ -66,7 +67,7 @@ export async function mapSupabaseShopToShop(
     url: rawShop.url || "",
     hours: rawShop.business_hours || "N/A",
     location: rawShop.location || "",
-    category: rawShop.category || "",
+    category: rawShop.category || [], // Default to empty array
     detailed_category: rawShop.detailed_category || "",
     description: rawShop.comments || "No description provided.",
     comments: rawShop.comments, // Add comments property
@@ -81,5 +82,6 @@ export async function mapSupabaseShopToShop(
     liked: currentUserId ? shopLikes.some((like: { user_id: string }) => like.user_id === currentUserId) : false,
     rating: parseFloat(averageRating.toFixed(1)),
     reviewCount: shopReviews.length,
+    searchable_categories_text: rawShop.searchable_categories_text ?? null, // Add this line
   };
 }

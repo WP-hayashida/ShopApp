@@ -1,36 +1,41 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Upload, MapPin, Clock, Tag, Camera } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
+import React, { useState } from "react";
+import { ArrowLeft, Upload, MapPin, Clock, Tag, Camera } from "lucide-react";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Badge } from "./ui/badge";
 import Image from "next/image";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "./ui/command";
+import { Checkbox } from "./ui/checkbox";
+
+import { categories } from "@/config/categories";
 
 interface PostFormProps {
-  onNavigate: (page: 'home' | 'mypage') => void;
+  onNavigate: (page: "home" | "mypage") => void;
 }
 
 export function PostForm({ onNavigate }: PostFormProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    description: '',
-    location: '',
-    hours: '',
-    url: '',
+    name: "",
+    categories: [] as string[], // Changed to categories (array)
+    description: "",
+    location: "",
+    hours: "",
+    url: "",
     tags: [] as string[],
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [newTag, setNewTag] = useState('');
-
-  const categories = [
-    'ラーメン', '寿司', 'カフェ', '和食', 'イタリアン', '中華', 'フレンチ', 
-    'ファストフード', '居酒屋', 'バー', 'スイーツ', 'ベーカリー'
-  ];
-
+  const [newTag, setNewTag] = useState("");
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -47,24 +52,33 @@ export function PostForm({ onNavigate }: PostFormProps) {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData({
         ...formData,
-        tags: [...formData.tags, newTag.trim()]
+        tags: [...formData.tags, newTag.trim()],
       });
-      setNewTag('');
+      setNewTag("");
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
     setFormData({
       ...formData,
-      tags: formData.tags.filter(tag => tag !== tagToRemove)
+      tags: formData.tags.filter((tag) => tag !== tagToRemove),
+    });
+  };
+
+  const handleCategoryChange = (category: string, isChecked: boolean) => {
+    setFormData((prevData) => {
+      const newCategories = isChecked
+        ? [...prevData.categories, category]
+        : prevData.categories.filter((c) => c !== category);
+      return { ...prevData, categories: newCategories };
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would typically submit the data to your backend
-    console.log('Submitting:', formData);
-    onNavigate('home');
+    console.log("Submitting:", formData);
+    onNavigate("home");
   };
 
   return (
@@ -75,7 +89,7 @@ export function PostForm({ onNavigate }: PostFormProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onNavigate('home')}
+            onClick={() => onNavigate("home")}
             className="p-2"
           >
             <ArrowLeft size={20} />
@@ -96,28 +110,87 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   id="name"
                   placeholder="例: 大塚ラーメン本店"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="category">カテゴリー *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData({...formData, category: value})}
+                <Label htmlFor="categories">カテゴリー *</Label>
+                <Popover
+                  open={categoryPopoverOpen}
+                  onOpenChange={setCategoryPopoverOpen}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="カテゴリーを選択してください" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={categoryPopoverOpen}
+                      className="w-full justify-start text-left h-auto"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex flex-wrap gap-1 py-1">
+                          {formData.categories.length > 0
+                            ? formData.categories.map((cat) => (
+                                <Badge
+                                  key={cat}
+                                  variant="secondary"
+                                >
+                                  {cat}
+                                </Badge>
+                              ))
+                            : <span className="text-muted-foreground">カテゴリーを選択してください</span>}
+                        </div>
+                        <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="カテゴリーを検索..." />
+                      <CommandEmpty>カテゴリーが見つかりません。</CommandEmpty>
+                      <CommandGroup>
+                        {categories.map((category) => (
+                          <CommandItem
+                            key={category}
+                            onSelect={() =>
+                              handleCategoryChange(
+                                category,
+                                !formData.categories.includes(category)
+                              )
+                            }
+                          >
+                            <Checkbox
+                              checked={formData.categories.includes(category)}
+                              onCheckedChange={(checked) =>
+                                handleCategoryChange(
+                                  category,
+                                  checked as boolean
+                                )
+                              }
+                              className="mr-2"
+                            />
+                            {category}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.categories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="cursor-pointer"
+                      onClick={() => handleCategoryChange(category, false)}
+                    >
+                      {category} ×
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -126,7 +199,9 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   id="description"
                   placeholder="このお店の魅力を教えてください..."
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   required
                 />
@@ -165,9 +240,14 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   </div>
                 ) : (
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <Upload className="mx-auto mb-4 text-muted-foreground" size={48} />
+                    <Upload
+                      className="mx-auto mb-4 text-muted-foreground"
+                      size={48}
+                    />
                     <Label htmlFor="image-upload" className="cursor-pointer">
-                      <span className="text-primary hover:underline">写真をアップロード</span>
+                      <span className="text-primary hover:underline">
+                        写真をアップロード
+                      </span>
                       <p className="text-sm text-muted-foreground mt-1">
                         ファイルを選択されていません
                       </p>
@@ -200,7 +280,9 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   id="location"
                   placeholder="東京都豊島区"
                   value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
                 />
               </div>
 
@@ -213,10 +295,11 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   id="hours"
                   placeholder="11:00-22:00"
                   value={formData.hours}
-                  onChange={(e) => setFormData({...formData, hours: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, hours: e.target.value })
+                  }
                 />
               </div>
-
             </CardContent>
           </Card>
 
@@ -233,7 +316,9 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   type="url"
                   placeholder="https://example.com"
                   value={formData.url}
-                  onChange={(e) => setFormData({...formData, url: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, url: e.target.value })
+                  }
                 />
               </div>
 
@@ -247,9 +332,15 @@ export function PostForm({ onNavigate }: PostFormProps) {
                     placeholder="タグを入力"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), handleAddTag())
+                    }
                   />
-                  <Button type="button" variant="outline" onClick={handleAddTag}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddTag}
+                  >
                     追加
                   </Button>
                 </div>
@@ -274,7 +365,7 @@ export function PostForm({ onNavigate }: PostFormProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => onNavigate('home')}
+              onClick={() => onNavigate("home")}
               className="flex-1"
             >
               キャンセル
