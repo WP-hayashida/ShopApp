@@ -217,6 +217,28 @@ export default function ShopNewPage() {
     }
   };
 
+  // ユーザー情報読み込み中の表示
+  if (loadingUser) {
+    return (
+      <div className="container mx-auto max-w-2xl py-10 text-center">
+        <p>読み込み中...</p>
+      </div>
+    );
+  }
+
+  // 未ログイン時の表示
+  if (!user) {
+    return (
+      <div className="container mx-auto max-w-2xl py-10 text-center">
+        <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
+        <p>お店を投稿するにはサインインが必要です。</p>
+        <Button onClick={handleSignIn} className="mt-4">
+          Googleでサインイン
+        </Button>
+      </div>
+    );
+  }
+
   // メインのフォーム表示
   return (
     <div className="container mx-auto max-w-2xl py-10">
