@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Shop } from "@/app/(features)/_lib/types";
+import { SearchFilters, Shop } from "@/app/(features)/_lib/types";
 import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
 import { useRouter } from "next/navigation";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -16,7 +16,13 @@ export default function HomePageClient() {
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const router = useRouter();
 
-  const { searchTerm } = useSearch();
+  const { searchTerm, categoryFilter } = useSearch();
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilters>({
+    keyword: searchTerm,
+    location: "",
+    category: categoryFilter,
+    sortBy: "created_at.asc",
+  });
 
   const handleNavigate = (page: "detail", shop: Shop) => {
     if (page === "detail") {
@@ -38,14 +44,16 @@ export default function HomePageClient() {
     const getShops = async () => {
       setLoading(true);
       setIsSearching(true); // Set searching to true
-            const { data: { user: currentUser }, } = await supabase.auth.getUser();
-            const currentUserId = currentUser?.id || null; // Convert to string | null
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+      const currentUserId = currentUser?.id || null; // Convert to string | null
 
       let query = supabase
         .from("shops")
         .select(
           `
-          id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id,
+          id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
           likes(user_id),
           ratings(rating),
           reviews(id)
@@ -53,11 +61,26 @@ export default function HomePageClient() {
         )
         .order("created_at", { ascending: false });
 
-      if (searchTerm) {
-        const lowercasedSearchTerm = searchTerm.toLowerCase();
+      if (appliedFilters.keyword) {
+        const lowercasedSearchTerm = appliedFilters.keyword.toLowerCase();
         query = query.or(
-          `name.ilike.%${lowercasedSearchTerm}%,detailed_category.ilike.%${lowercasedSearchTerm}%,comments.ilike.%${lowercasedSearchTerm}%`
+          `name.ilike.%${lowercasedSearchTerm}%,detailed_category.ilike.%${lowercasedSearchTerm}%,comments.ilike.%${lowercasedSearchTerm}%,searchable_categories_text.ilike.%${lowercasedSearchTerm}%`
         );
+      }
+
+      if (appliedFilters.category && appliedFilters.category.length > 0) {
+        query = query.overlaps("category", appliedFilters.category); // Use overlaps for array filtering
+      }
+
+      // Apply location filter
+      if (appliedFilters.location) {
+        query = query.eq("location", appliedFilters.location);
+      }
+
+      // Apply sortBy
+      const [field, order] = appliedFilters.sortBy.split(".");
+      if (field && order) {
+        query = query.order(field, { ascending: order === "asc" });
       }
 
       const { data, error } = await query;
@@ -65,7 +88,8 @@ export default function HomePageClient() {
       if (error) {
         console.error("Error fetching shops:", error);
         setShops([]); // エラー時は空配列をセット
-      } else if (data) { // dataが存在する場合のみ処理
+      } else if (data) {
+        // dataが存在する場合のみ処理
         const shopsDataPromises = data.map(async (shop: RawSupabaseShop) => {
           return mapSupabaseShopToShop(shop, supabase, currentUserId);
         });
@@ -79,13 +103,13 @@ export default function HomePageClient() {
     };
 
     getShops();
-  }, [supabase, searchTerm]);
+  }, [supabase, appliedFilters]); // Depend on appliedFilters
 
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     shops.forEach((shop) => {
       if (shop.category) {
-        categories.add(shop.category);
+        shop.category.forEach((cat) => categories.add(cat));
       }
       if (shop.detailed_category) {
         shop.detailed_category
@@ -117,13 +141,14 @@ export default function HomePageClient() {
   return (
     <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
       <FilterableShopList
-        key={searchTerm} // Add key prop to force remount on searchTerm change
+        key={JSON.stringify(appliedFilters)} // Key to force remount on filter change
         initialShops={shops}
         initialRowCount={2}
         availableCategories={availableCategories}
         onNavigate={handleNavigate}
-        headerKeyword={searchTerm}
+        headerKeyword={appliedFilters.keyword}
         isSearching={isSearching}
+        onSearchSubmit={setAppliedFilters} // Pass setter for appliedFilters
       />
     </main>
   );

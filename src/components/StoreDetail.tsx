@@ -8,6 +8,7 @@ import { Card, CardContent } from './ui/card';
 import { Separator } from './ui/separator';
 import { Textarea } from './ui/textarea';
 import { Shop } from '@/app/(features)/_lib/types';
+import { getCategoryConfig } from './CategoryConfig';
 
 interface StoreDetailProps {
   store: Shop;
@@ -114,9 +115,23 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
                     <Share2 size={16} />
                   </Button>
                 </div>
-                <Badge className="absolute bottom-4 left-4">
-                  {store.category}
-                </Badge>
+                <div className="absolute bottom-4 left-4 flex flex-wrap gap-1">
+                  {store.category.map((cat, index) => {
+                    const catConfig = getCategoryConfig(cat);
+                    const CatIconComponent = catConfig.icon;
+                    return (
+                      <Badge
+                        key={index}
+                        className={`${catConfig.bgColor} backdrop-blur-sm px-2 py-1 border ${catConfig.borderColor}`}
+                      >
+                        <CatIconComponent className={`size-3 ${catConfig.textColor}`} />
+                        <span className={`text-xs font-medium ${catConfig.textColor} ml-1`}>
+                          {cat}
+                        </span>
+                      </Badge>
+                    );
+                  })}
+                </div>
               </div>
             </Card>
 

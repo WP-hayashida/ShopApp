@@ -20,7 +20,7 @@ import Link from "next/link";
 interface Store {
   id: string;
   name: string;
-  category: string;
+  category: string[];
   rating: number;
   reviewCount: number;
   imageUrl: string;
@@ -44,8 +44,8 @@ interface StoreCardProps {
 }
 
 export function StoreCard({ store, onLike }: StoreCardProps) {
-  const categoryConfig = getCategoryConfig(store.category);
-  const IconComponent = categoryConfig.icon;
+
+
 
   return (
     <Card className="overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group">
@@ -60,18 +60,23 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
             />
           </Link>
 
-          {/* Category Badge */}
-          <div
-            className={`absolute top-3 left-3 ${categoryConfig.bgColor} backdrop-blur-sm rounded-md px-2 py-1 border ${categoryConfig.borderColor}`}
-          >
-            <div className="flex items-center space-x-1">
-              <IconComponent className={`size-3 ${categoryConfig.textColor}`} />
-              <span
-                className={`text-xs font-medium ${categoryConfig.textColor}`}
-              >
-                {store.category}
-              </span>
-            </div>
+          {/* Category Badges */}
+          <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+            {store.category.map((cat, index) => {
+              const catConfig = getCategoryConfig(cat);
+              const CatIconComponent = catConfig.icon;
+              return (
+                <Badge
+                  key={index}
+                  className={`${catConfig.bgColor} backdrop-blur-sm px-2 py-1 border ${catConfig.borderColor}`}
+                >
+                  <CatIconComponent className={`size-3 ${catConfig.textColor}`} />
+                  <span className={`text-xs font-medium ${catConfig.textColor} ml-1`}>
+                    {cat}
+                  </span>
+                </Badge>
+              );
+            })}
           </div>
 
           {/* Like Button */}
