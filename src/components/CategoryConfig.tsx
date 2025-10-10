@@ -1,4 +1,5 @@
 import { LucideIcon, Coffee, Utensils, ShoppingBag, Home } from 'lucide-react';
+import { categories } from '@/config/categories';
 
 interface CategoryConfig {
   icon: LucideIcon;
@@ -7,7 +8,7 @@ interface CategoryConfig {
   textColor: string;
 }
 
-const categoryMap: Record<string, CategoryConfig> = {
+const baseCategoryMap: Record<string, CategoryConfig> = {
   "カフェ": {
     icon: Coffee,
     bgColor: "bg-blue-50",
@@ -26,14 +27,21 @@ const categoryMap: Record<string, CategoryConfig> = {
     borderColor: "border-purple-200",
     textColor: "text-purple-700",
   },
-  // Add more categories as needed
+  // Add more specific categories as needed
 };
 
+const defaultCategoryConfig: CategoryConfig = {
+  icon: Home, // Default icon
+  bgColor: "bg-gray-50",
+  borderColor: "border-gray-200",
+  textColor: "text-gray-700",
+};
+
+const categoryMap: Record<string, CategoryConfig> = categories.reduce((acc, category) => {
+  acc[category] = baseCategoryMap[category] || defaultCategoryConfig;
+  return acc;
+}, {} as Record<string, CategoryConfig>);
+
 export function getCategoryConfig(category: string): CategoryConfig {
-  return categoryMap[category] || {
-    icon: Home, // Default icon
-    bgColor: "bg-gray-50",
-    borderColor: "border-gray-200",
-    textColor: "text-gray-700",
-  };
+  return categoryMap[category] || defaultCategoryConfig;
 }

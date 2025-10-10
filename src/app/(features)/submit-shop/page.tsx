@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -14,7 +14,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { categories as predefinedCategories } from "@/config/categories"; // Import categories from config
+import { Tag } from "lucide-react";
+import { ShopPayload } from "../_lib/types"; // Import ShopPayload
 
 // 定数：都道府県リスト
 const prefectures = [
@@ -67,24 +84,6 @@ const prefectures = [
   "沖縄県",
 ];
 
-// 定数：カテゴリリスト
-const categories = [
-  "カフェ",
-  "レストラン",
-  "ラーメン",
-  "バー",
-  "居酒屋",
-  "焼肉",
-  "寿司",
-  "パン屋",
-  "スイーツ",
-  "雑貨屋",
-  "書店",
-  "アパレル",
-  "美容室",
-  "その他",
-];
-
 /**
  * 新しいお店を投稿するページコンポーネント
  */
@@ -102,7 +101,8 @@ export default function ShopNewPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState(prefectures[12]); // デフォルトを東京に設定
-  const [category, setCategory] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 変更
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
   const [detailedCategory, setDetailedCategory] = useState("");
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(false);
@@ -172,25 +172,25 @@ export default function ShopNewPage() {
 
       // 営業時間を整形
       const businessHours =
-        startTime && endTime ? `${startTime} - ${endTime}` : "";
-      
-      // データベースに保存する店舗データを作成
-      const shopData = {
-        user_id: submitUser.id,
+        startTime && endTime ? `${startTime} - ${endTime}` : null;
+
+      // データベースに保存する店舗データを作成 (ShopPayload型を使用)
+      const shopPayload: ShopPayload = {
         name,
         photo_url: photoUrl,
-        url,
+        url: url || null,
         business_hours: businessHours,
-        location,
-        category,
-        detailed_category: detailedCategory,
-        comments,
+        location: location || null,
+        category: selectedCategories.length > 0 ? selectedCategories : null, // string[]をそのまま使用
+        detailed_category: detailedCategory || null,
+        comments: comments || null,
       };
 
       // `shops`テーブルにデータを挿入
-      const { error: insertError } = await supabase
-        .from("shops")
-        .insert(shopData);
+      const { error: insertError } = await supabase.from("shops").insert({
+        ...shopPayload,
+        user_id: submitUser.id, // user_idはペイロードに含めず、ここで追加
+      });
 
       if (insertError) {
         throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
@@ -217,28 +217,6 @@ export default function ShopNewPage() {
     }
   };
 
-  // ユーザー情報読み込み中の表示
-  if (loadingUser) {
-    return (
-      <div className="container mx-auto max-w-2xl py-10 text-center">
-        <p>読み込み中...</p>
-      </div>
-    );
-  }
-
-  // 未ログイン時の表示
-  if (!user) {
-    return (
-      <div className="container mx-auto max-w-2xl py-10 text-center">
-        <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
-        <p>お店を投稿するにはサインインが必要です。</p>
-        <Button onClick={handleSignIn} className="mt-4">
-          Googleでサインイン
-        </Button>
-      </div>
-    );
-  }
-
   // メインのフォーム表示
   return (
     <div className="container mx-auto max-w-2xl py-10">
@@ -254,7 +232,9 @@ export default function ShopNewPage() {
           <Input
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setName(e.target.value)
+            }
             placeholder="例: 大砲ラーメン 本店"
             required
           />
@@ -265,7 +245,7 @@ export default function ShopNewPage() {
           <Input
             id="photo"
             type="file"
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setPhoto(e.target.files ? e.target.files[0] : null)
             }
             accept="image/*"
@@ -278,7 +258,9 @@ export default function ShopNewPage() {
             id="url"
             type="url"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setUrl(e.target.value)
+            }
             placeholder="https://example.com"
           />
         </div>
@@ -289,13 +271,17 @@ export default function ShopNewPage() {
             <Input
               type="time"
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setStartTime(e.target.value)
+              }
             />
             <span>-</span>
             <Input
               type="time"
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setEndTime(e.target.value)
+              }
             />
           </div>
         </div>
@@ -317,19 +303,84 @@ export default function ShopNewPage() {
         </div>
         {/* カテゴリ */}
         <div className="space-y-2">
-          <Label htmlFor="category">カテゴリ</Label>
-          <Select onValueChange={setCategory} value={category}>
-            <SelectTrigger id="category">
-              <SelectValue placeholder="カテゴリを選択" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="categories">カテゴリ</Label>
+          <Popover
+            open={categoryPopoverOpen}
+            onOpenChange={setCategoryPopoverOpen}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={categoryPopoverOpen}
+                className="w-full justify-start text-left h-auto"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex flex-wrap gap-1 py-1">
+                    {selectedCategories.length > 0 ? (
+                      selectedCategories.map((cat) => (
+                        <Badge key={cat} variant="secondary">
+                          {cat}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground">
+                        カテゴリを選択してください
+                      </span>
+                    )}
+                  </div>
+                  <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </div>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+              <Command>
+                <CommandInput placeholder="カテゴリを検索..." />
+                <CommandEmpty>カテゴリが見つかりません。</CommandEmpty>
+                <CommandGroup>
+                  {predefinedCategories.map((cat) => (
+                    <CommandItem
+                      key={cat}
+                      onSelect={() =>
+                        setSelectedCategories((prev) =>
+                          prev.includes(cat)
+                            ? prev.filter((c) => c !== cat)
+                            : [...prev, cat]
+                        )
+                      }
+                    >
+                      <Checkbox
+                        checked={selectedCategories.includes(cat)}
+                        onCheckedChange={(checked) =>
+                          setSelectedCategories((prev) =>
+                            checked
+                              ? [...prev, cat]
+                              : prev.filter((c) => c !== cat)
+                          )
+                        }
+                        className="mr-2"
+                      />
+                      {cat}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selectedCategories.map((cat) => (
+              <Badge
+                key={cat}
+                variant="secondary"
+                className="cursor-pointer"
+                onClick={() =>
+                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
+                }
+              >
+                {cat} ×
+              </Badge>
+            ))}
+          </div>
         </div>
         {/* 詳細カテゴリ */}
         <div className="space-y-2">
@@ -337,22 +388,30 @@ export default function ShopNewPage() {
           <Input
             id="detailedCategory"
             value={detailedCategory}
-            onChange={(e) => setDetailedCategory(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setDetailedCategory(e.target.value)
+            }
             placeholder="例: スペシャルティコーヒー"
           />
         </div>
         {/* コメント */}
         <div className="space-y-2">
           <Label htmlFor="comments">コメント</Label>
-          <Textarea
+          <Input
             id="comments"
             value={comments}
-            onChange={(e) => setComments(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setComments(e.target.value)
+            }
             placeholder="お店の雰囲気やおすすめメニューなどを記入してください"
           />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <Button type="submit" className="w-full bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" disabled={loading}>
+        <Button
+          type="submit"
+          className="w-full bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          disabled={loading}
+        >
           {loading ? "投稿中..." : "投稿する"}
         </Button>
       </form>

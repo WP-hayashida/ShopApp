@@ -7,9 +7,18 @@ import { Shop } from "@/app/(features)/_lib/types";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
 import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
+import { SearchFilters } from "@/app/(features)/_lib/types"; // Import SearchFilters
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapSupabaseShopToShop, RawSupabaseShop } from "../_lib/shopMapper"; // Import RawSupabaseShop
 import { useRouter } from "next/navigation";
+
+// デフォルトの検索フィルター
+const defaultSearchFilters: SearchFilters = {
+  keyword: "",
+  location: "",
+  category: [],
+  sortBy: "created_at.asc",
+};
 
 /**
  * マイページコンポーネント
@@ -30,21 +39,24 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true); // ローディング状態
   const [shops, setShops] = useState<Shop[]>([]); // ユーザーが投稿したお店のリスト
   const [likedShops, setLikedShops] = useState<Shop[]>([]); // ユーザーがお気に入りしたお店のリスト
+  const [currentFilters, setCurrentFilters] =
+    useState<SearchFilters>(defaultSearchFilters); // 検索フィルターの状態
 
   // 副作用フック：ユーザー情報と関連データの取得
   useEffect(() => {
-    const fetchUserAndData = async () => {
+    const fetchUserAndData = async (filters: SearchFilters) => {
       // ユーザー情報を取得
-            const { data: { user }, } = await supabase.auth.getUser();
-            setUser(user);
-            
+      const {
+        data: { user: fetchedUser },
+      } = await supabase.auth.getUser();
+      setUser(fetchedUser);
 
-      if (user) {
+      if (fetchedUser) {
         // プロフィール情報を取得
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("username, avatar_url")
-          .eq("id", user.id)
+          .eq("id", fetchedUser.id)
           .maybeSingle();
 
         if (profileError) {
@@ -56,39 +68,58 @@ export default function MyPage() {
           const { error: insertError } = await supabase
             .from("profiles")
             .insert({
-              id: user.id,
-              username: user.user_metadata?.name || "Unnamed User",
-              avatar_url: user.user_metadata?.avatar_url || null,
+              id: fetchedUser.id,
+              username: fetchedUser.user_metadata?.name || "Unnamed User",
+              avatar_url: fetchedUser.user_metadata?.avatar_url || null,
             });
 
           if (insertError) {
             console.error("Error creating default profile:", insertError);
           } else {
             setProfile({
-              username: user.user_metadata?.name || "Unnamed User",
-              avatar_url: user.user_metadata?.avatar_url || null,
+              username: fetchedUser.user_metadata?.name || "Unnamed User",
+              avatar_url: fetchedUser.user_metadata?.avatar_url || null,
             });
           }
         }
 
         // ユーザーが投稿したお店の情報を取得
-        const { data: fetchedShops, error: shopsError } = await supabase
+        let shopsQuery = supabase
           .from("shops")
           .select(
             `
-            id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id,
+            id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
             likes(user_id),
             ratings(rating),
             reviews(id)
           `
           )
-          .eq("user_id", user.id);
+          .eq("user_id", fetchedUser.id);
+
+        // フィルターを適用
+        if (filters.keyword) {
+          shopsQuery = shopsQuery.ilike("name", `%${filters.keyword}%`);
+        }
+        if (filters.location) {
+          shopsQuery = shopsQuery.eq("location", filters.location);
+        }
+        if (filters.category && filters.category.length > 0) {
+          shopsQuery = shopsQuery.contains("category", filters.category);
+        }
+        const [field, order] = filters.sortBy.split(".");
+        if (field && order) {
+          shopsQuery = shopsQuery.order(field, { ascending: order === "asc" });
+        }
+
+        const { data: fetchedShops, error: shopsError } = await shopsQuery;
 
         if (shopsError) {
           console.error("Error fetching shops for MyPage:", shopsError);
         } else {
           const mappedShops = await Promise.all(
-            (fetchedShops || []).map((shop: RawSupabaseShop) => mapSupabaseShopToShop(shop, supabase, user.id))
+            (fetchedShops || []).map((shop: RawSupabaseShop) =>
+              mapSupabaseShopToShop(shop, supabase, fetchedUser.id)
+            )
           );
           setShops(mappedShops);
         }
@@ -97,19 +128,19 @@ export default function MyPage() {
         const { data: likedShopIds, error: likedShopIdsError } = await supabase
           .from("likes")
           .select("shop_id")
-          .eq("user_id", user.id);
+          .eq("user_id", fetchedUser.id);
 
         if (likedShopIdsError) {
           console.error("Error fetching liked shop IDs:", likedShopIdsError);
         } else {
-          const shopIds = likedShopIds.map(like => like.shop_id);
-          
+          const shopIds = likedShopIds.map((like) => like.shop_id);
+
           // お店の情報を取得
-          const { data: fetchedLikedShops, error: likedShopsError } = await supabase
+          let likedShopsQuery = supabase
             .from("shops")
             .select(
               `
-              id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id,
+              id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
               likes(user_id),
               ratings(rating),
               reviews(id)
@@ -117,11 +148,39 @@ export default function MyPage() {
             )
             .in("id", shopIds);
 
+          // フィルターを適用
+          if (filters.keyword) {
+            likedShopsQuery = likedShopsQuery.ilike(
+              "name",
+              `%${filters.keyword}%`
+            );
+          }
+          if (filters.location) {
+            likedShopsQuery = likedShopsQuery.eq("location", filters.location);
+          }
+          if (filters.category && filters.category.length > 0) {
+            likedShopsQuery = likedShopsQuery.contains(
+              "category",
+              filters.category
+            );
+          }
+          const [likedField, likedOrder] = filters.sortBy.split(".");
+          if (likedField && likedOrder) {
+            likedShopsQuery = likedShopsQuery.order(likedField, {
+              ascending: likedOrder === "asc",
+            });
+          }
+
+          const { data: fetchedLikedShops, error: likedShopsError } =
+            await likedShopsQuery;
+
           if (likedShopsError) {
             console.error("Error fetching liked shops:", likedShopsError);
           } else {
             const mappedLikedShops = await Promise.all(
-              (fetchedLikedShops || []).map((shop: RawSupabaseShop) => mapSupabaseShopToShop(shop, supabase, user.id))
+              (fetchedLikedShops || []).map((shop: RawSupabaseShop) =>
+                mapSupabaseShopToShop(shop, supabase, fetchedUser.id)
+              )
             );
             setLikedShops(mappedLikedShops);
           }
@@ -130,14 +189,27 @@ export default function MyPage() {
       setLoading(false);
     };
 
-    fetchUserAndData();
+    if (user?.id) {
+      // ユーザーがログインしている場合のみデータをフェッチ
+      fetchUserAndData(currentFilters); // currentFiltersを渡す
+    } else {
+      setLoading(false); // 未ログイン時はローディングを終了
+      setShops([]); // 未ログイン時はショップリストをクリア
+      setLikedShops([]); // 未ログイン時はお気に入りリストをクリア
+    }
 
     // 認証状態の変更を監視
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
         // 認証状態が変わったらデータを再取得
-        fetchUserAndData();
+        if (session?.user) {
+          fetchUserAndData(currentFilters); // currentFiltersを渡して再フェッチ
+        } else {
+          setShops([]);
+          setLikedShops([]);
+          setLoading(false);
+        }
       }
     );
 
@@ -145,7 +217,7 @@ export default function MyPage() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase, user?.id]); // Add user.id to dependencies
+  }, [supabase, user?.id, currentFilters]); // currentFiltersを依存配列に追加
 
   // Googleでサインインする処理
   const handleSignIn = async () => {
@@ -155,6 +227,11 @@ export default function MyPage() {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
+  };
+
+  // FilterableShopListからの検索要求を処理するハンドラ
+  const handleSearchSubmit = (filters: SearchFilters) => {
+    setCurrentFilters(filters);
   };
 
   // ローディング中の表示
@@ -212,7 +289,8 @@ export default function MyPage() {
               <FilterableShopList
                 initialShops={myPosts}
                 availableCategories={[]} // Provide an empty array for now
-                onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)} // Implement navigation
+                onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)}
+                onSearchSubmit={handleSearchSubmit} // Add this
               />
             ) : (
               <p>まだ投稿したお店はありません。</p>
@@ -226,7 +304,8 @@ export default function MyPage() {
               <FilterableShopList
                 initialShops={likedShops}
                 availableCategories={[]} // Provide an empty array for now
-                onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)} // Implement navigation
+                onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)}
+                onSearchSubmit={handleSearchSubmit} // Add this
               />
             ) : (
               <p>お気に入りのお店はまだありません。</p>
