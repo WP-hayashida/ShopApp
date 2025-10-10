@@ -5,7 +5,7 @@ import { SearchControls } from "@/app/(features)/_components/SearchControls";
 import { useSearch } from "@/context/SearchContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal, Tag as TagIcon } from "lucide-react"; // TagをTagIconとしてインポート
+
 
 // フィルターの初期状態 (for SearchControls)
 const defaultSearchControlsFilters: SearchFilters = {

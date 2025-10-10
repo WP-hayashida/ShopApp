@@ -16,7 +16,7 @@ import {
   CommandItem,
 } from "./ui/command";
 import { Checkbox } from "./ui/checkbox";
-import { cn } from "@/lib/utils";
+
 import { categories } from "@/config/categories";
 
 interface PostFormProps {

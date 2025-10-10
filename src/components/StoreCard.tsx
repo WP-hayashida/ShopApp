@@ -44,8 +44,8 @@ interface StoreCardProps {
 }
 
 export function StoreCard({ store, onLike }: StoreCardProps) {
-  const categoryConfig = getCategoryConfig(store.category[0]); // Use the first category for main config
-  const IconComponent = categoryConfig.icon;
+
+
 
   return (
     <Card className="overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group">

@@ -27,7 +27,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+
 import { Badge } from "@/components/ui/badge";
 import { categories as predefinedCategories } from "@/config/categories"; // Import categories from config
 import { Tag } from "lucide-react";

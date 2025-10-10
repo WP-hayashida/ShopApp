@@ -17,6 +17,7 @@ export interface RawSupabaseShop {
   likes: { user_id: string }[];
   ratings: { rating: number | null }[];
   reviews: { id: string }[];
+  searchable_categories_text: string | null; // Add this line
 }
 
 /**
@@ -81,6 +82,6 @@ export async function mapSupabaseShopToShop(
     liked: currentUserId ? shopLikes.some((like: { user_id: string }) => like.user_id === currentUserId) : false,
     rating: parseFloat(averageRating.toFixed(1)),
     reviewCount: shopReviews.length,
-    searchable_categories_text: (rawShop as any).searchable_categories_text ?? null, // Add this line
+    searchable_categories_text: rawShop.searchable_categories_text ?? null, // Add this line
   };
 }

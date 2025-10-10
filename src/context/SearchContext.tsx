@@ -5,7 +5,6 @@ import React, {
   useState,
   useContext,
   ReactNode,
-  useEffect,
 } from "react";
 
 interface SearchContextType {
