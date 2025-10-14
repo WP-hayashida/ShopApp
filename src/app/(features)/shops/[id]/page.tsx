@@ -115,7 +115,7 @@ export default function ShopDetailPage() {
         .from("shops")
         .select(
           `
-          id, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
+          id, name, photo_url, url, business_hours, location, latitude, longitude, category, detailed_category, comments, user_id, searchable_categories_text,
           likes(user_id),
           ratings(rating),
           reviews(id)
@@ -167,6 +167,8 @@ export default function ShopDetailPage() {
           url: shopData.url || "",
           hours: shopData.business_hours || "N/A",
           location: shopData.location || "",
+          latitude: shopData.latitude ?? null,
+          longitude: shopData.longitude ?? null,
           category: shopData.category || [], // Default to empty array
           detailed_category: shopData.detailed_category || "",
           description: shopData.comments || "説明がありません。",
@@ -190,6 +192,12 @@ export default function ShopDetailPage() {
           reviewCount: shopReviews.length,
           searchable_categories_text:
             shopData.searchable_categories_text ?? null,
+          // Initialize other map-related fields
+          place_id: null,
+          formatted_address: null,
+          nearest_station_name: null,
+          nearest_station_place_id: null,
+          walk_time_from_station: null,
         };
         setStore(transformedShop);
       }

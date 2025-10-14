@@ -10,9 +10,12 @@ import { Badge } from "@/components/ui/badge";
 // フィルターの初期状態 (for SearchControls)
 const defaultSearchControlsFilters: SearchFilters = {
   keyword: "",
-  location: "",
-  category: [], // 変更
-  sortBy: "created_at.asc", // 新着順をデフォルトに
+  search_lat: null,
+  search_lng: null,
+  search_radius: null,
+  location_text: "",
+  category: [],
+  sortBy: "created_at.desc",
 };
 
 // コンポーネントのプロパティの型定義1
@@ -49,7 +52,7 @@ export default function FilterableShopList({
   const [searchControlsFilters, setSearchControlsFilters] =
     useState<SearchFilters>({
       ...defaultSearchControlsFilters,
-      keyword: headerKeyword,
+      keyword: headerKeyword || "",
       category: categoryFilter, // Initialize with context categoryFilter
     });
   const [expanded, setExpanded] = useState(false);
@@ -59,13 +62,13 @@ export default function FilterableShopList({
     setSearchControlsFilters((prev) => ({
       ...prev,
       category: categoryFilter,
-      keyword: searchTerm, // Also update keyword from context
+      keyword: searchTerm || "", // Also update keyword from context
     }));
   }, [categoryFilter, searchTerm]);
 
   // Function to handle search from SearchControls
   const handleSearchControlsSubmit = (filters: SearchFilters) => {
-    setSearchTerm(filters.keyword); // Update searchTerm in context
+    setSearchTerm(filters.keyword || ""); // Update searchTerm in context
     // categoryFilter is already updated by SearchControls directly
     // location and sortBy are handled by HomePageClient's useEffect
     onSearchSubmit(filters); // Submit all filters to HomePageClient
@@ -91,75 +94,14 @@ export default function FilterableShopList({
     });
   };
 
-  // フィルターとソートが適用された店舗リストをメモ化
-  const filteredAndSortedShops = useMemo(() => {
-    let filtered = [...initialShops];
-
-    // SearchControlsからのキーワードによるフィルタリング (client-side for initialShops)
-    if (searchControlsFilters.keyword) {
-      const lowercasedKeyword = searchControlsFilters.keyword.toLowerCase();
-      filtered = filtered.filter(
-        (shop) =>
-          shop.name.toLowerCase().includes(lowercasedKeyword) ||
-          (shop.detailed_category &&
-            shop.detailed_category.toLowerCase().includes(lowercasedKeyword)) ||
-          (shop.comments &&
-            shop.comments.toLowerCase().includes(lowercasedKeyword)) ||
-          (shop.searchable_categories_text && // Use new searchable text
-            shop.searchable_categories_text
-              .toLowerCase()
-              .includes(lowercasedKeyword))
-      );
-    }
-
-    // 場所によるフィルタリング (client-side for initialShops)
-    if (searchControlsFilters.location) {
-      filtered = filtered.filter(
-        (shop) => shop.location === searchControlsFilters.location
-      );
-    }
-
-    // カテゴリによるフィルタリングはサーバーサイドで行われるため、ここでは削除
-    // if (searchControlsFilters.category.length > 0) {
-    //   filtered = filtered.filter((shop) =>
-    //     searchControlsFilters.category.some(cat => shop.category.includes(cat))
-    //   );
-    // }
-
-    // ソート処理
-    const [field, order] = searchControlsFilters.sortBy.split(".");
-    if (field && order) {
-      // Create a new array to ensure React detects a change
-      filtered = [...filtered].sort((a, b) => {
-        const aValue = a[field as keyof Shop];
-        const bValue = b[field as keyof Shop];
-
-        if (aValue === null || aValue === undefined)
-          return order === "asc" ? 1 : -1;
-        if (bValue === null || bValue === undefined)
-          return order === "asc" ? -1 : 1;
-
-        if (aValue < bValue) {
-          return order === "asc" ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return order === "asc" ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return filtered;
-  }, [initialShops, searchControlsFilters]);
-
-  // 表示する店舗リストをメモ化（「さらに表示」の状態を考慮）
+  // The filteredAndSortedShops logic is now handled server-side.
+  // This component now just displays the shops it receives.
   const shopsToShow = useMemo(() => {
     if (expanded || !initialRowCount) {
-      return filteredAndSortedShops;
+      return initialShops;
     }
-    // 3列表示を前提としている
-    return filteredAndSortedShops.slice(0, initialRowCount * 3);
-  }, [filteredAndSortedShops, expanded, initialRowCount]);
+    return initialShops.slice(0, initialRowCount * 3);
+  }, [initialShops, expanded, initialRowCount]);
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -202,7 +144,7 @@ export default function FilterableShopList({
         <ShopList shops={shopsToShow} onNavigate={onNavigate} />
       )}
       {/* 「さらに表示」ボタン */}
-      {!expanded && filteredAndSortedShops.length > shopsToShow.length && (
+      {!expanded && initialShops.length > shopsToShow.length && (
         <Button
           onClick={() => setExpanded(true)}
           variant="outline"
