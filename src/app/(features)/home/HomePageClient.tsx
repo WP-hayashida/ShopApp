@@ -1,110 +1,144 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { SearchFilters, Shop } from "@/app/(features)/_lib/types";
-import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { SearchFilters, Shop } from "../_lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import { useSearch } from "@/context/SearchContext";
-import { mapSupabaseShopToShop, RawSupabaseShop } from "../_lib/shopMapper"; // Import the mapper function
+import { createClient } from "@/lib/supabase/client";
+import FilterableShopList from "../_components/FilterableShopList";
+import { Database } from "@/lib/database.types";
 
+type RpcShopReturn = Database['public']['Functions']['search_shops']['Returns'][number];
+
+/**
+ * ホームページのクライアントサイドコンポーネント
+ * 店舗リストの表示、検索フィルターの管理、Supabaseからのデータ取得を統括する
+ */
 export default function HomePageClient() {
+  // 店舗データのstate
   const [shops, setShops] = useState<Shop[]>([]);
+  // 初期ロード状態
   const [loading, setLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false); // New state for search loading
+  // 検索実行中の状態
+  const [isSearching, setIsSearching] = useState(false);
+  // Supabaseクライアントインスタンス
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const router = useRouter();
 
+  // SearchContextから検索キーワードとカテゴリフィルターを取得
   const { searchTerm, categoryFilter } = useSearch();
+  // 現在適用されているフィルターの状態
   const [appliedFilters, setAppliedFilters] = useState<SearchFilters>({
     keyword: searchTerm,
-    location: "",
+    search_lat: null, // 周辺検索用緯度
+    search_lng: null, // 周辺検索用経度
+    search_radius: null, // 周辺検索用半径
+    location_text: "", // UI表示用の場所テキスト
     category: categoryFilter,
-    sortBy: "created_at.asc",
+    sortBy: "created_at.desc", // デフォルトの並び順は新着順
   });
 
+  /**
+   * 店舗詳細ページへのナビゲーションハンドラ
+   * @param page - 遷移先のページタイプ
+   * @param shop - 遷移する店舗データ
+   */
   const handleNavigate = (page: "detail", shop: Shop) => {
     if (page === "detail") {
       router.push(`/shops/${shop.id}`);
     }
   };
 
+  // Supabaseクライアントの初期化
   useEffect(() => {
     const initSupabase = async () => {
-      const client = createClient();
+      const client = await createClient(); // awaitを追加
       setSupabase(client);
     };
     initSupabase();
   }, []);
 
+  /**
+   * フィルターが変更された際にSupabaseから店舗データを取得するエフェクト
+   * サーバーサイドのRPC関数 `search_shops` を呼び出す
+   */
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) return; // Supabaseクライアントが初期化されていなければ何もしない
 
     const getShops = async () => {
-      setLoading(true);
-      setIsSearching(true); // Set searching to true
+      setIsSearching(true); // 検索中フラグを立てる
+      // 現在のユーザー情報を取得（いいね状態の判定に利用）
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
-      const currentUserId = currentUser?.id || null; // Convert to string | null
+      const currentUserId = currentUser?.id || null;
 
-      let query = supabase
-        .from("shops")
-        .select(
-          `
-          id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
-          likes(user_id),
-          ratings(rating),
-          reviews(id)
-        `
-        )
-        .order("created_at", { ascending: false });
+      console.log("Calling RPC with filters:", appliedFilters);
 
-      if (appliedFilters.keyword) {
-        const lowercasedSearchTerm = appliedFilters.keyword.toLowerCase();
-        query = query.or(
-          `name.ilike.%${lowercasedSearchTerm}%,detailed_category.ilike.%${lowercasedSearchTerm}%,comments.ilike.%${lowercasedSearchTerm}%,searchable_categories_text.ilike.%${lowercasedSearchTerm}%`
-        );
-      }
+      const rpcArgs = {
+        keyword: (appliedFilters.keyword || "") as string,
+        search_lat: appliedFilters.search_lat,
+        search_lng: appliedFilters.search_lng,
+        search_radius: appliedFilters.search_radius,
+        category_filter:
+          appliedFilters.category && appliedFilters.category.length > 0
+            ? appliedFilters.category
+            : null,
+        sort_by: appliedFilters.sortBy,
+        current_user_id: currentUserId,
+      };
 
-      if (appliedFilters.category && appliedFilters.category.length > 0) {
-        query = query.overlaps("category", appliedFilters.category); // Use overlaps for array filtering
-      }
-
-      // Apply location filter
-      if (appliedFilters.location) {
-        query = query.eq("location", appliedFilters.location);
-      }
-
-      // Apply sortBy
-      const [field, order] = appliedFilters.sortBy.split(".");
-      if (field && order) {
-        query = query.order(field, { ascending: order === "asc" });
-      }
-
-      const { data, error } = await query;
+      // データベースのRPC関数 `search_shops` を呼び出し、フィルターを適用
+      const { data, error } = await supabase.rpc("search_shops", rpcArgs);
 
       if (error) {
-        console.error("Error fetching shops:", error);
+        console.error("Error fetching shops via RPC:", error);
         setShops([]); // エラー時は空配列をセット
       } else if (data) {
-        // dataが存在する場合のみ処理
-        const shopsDataPromises = data.map(async (shop: RawSupabaseShop) => {
-          return mapSupabaseShopToShop(shop, supabase, currentUserId);
-        });
-        const shopsData = await Promise.all(shopsDataPromises);
+        // RPCから返されたデータをShopインターフェースの形式にマッピング
+        // RPC関数がリッチなデータを返すため、mapSupabaseShopToShopは不要
+        const shopsData = data.map((shop: RpcShopReturn) => ({
+          id: shop.id,
+          name: shop.name,
+          imageUrl: shop.photo_url || "/next.svg",
+          url: shop.url || "",
+          hours: shop.business_hours || "N/A",
+          location: shop.location || "",
+          category: shop.category || [],
+          detailed_category: shop.detailed_category || "",
+          description: shop.comments || "説明がありません。",
+          tags: shop.detailed_category
+            ? shop.detailed_category.split(",").map((tag: string) => tag.trim())
+            : [],
+          user: {
+            username: shop.username || "unknown",
+            avatar_url: shop.avatar_url || null,
+          },
+          likes: shop.like_count || 0,
+          liked: shop.liked || false,
+          rating: shop.rating ? parseFloat(Number(shop.rating).toFixed(1)) : 0,
+          reviewCount: shop.review_count || 0,
+          searchable_categories_text: shop.searchable_categories_text ?? null,
+          latitude: shop.latitude ?? null,
+          longitude: shop.longitude ?? null,
+          place_id: null,
+          formatted_address: null,
+          nearest_station_name: shop.nearest_station_name ?? null,
+          walk_time_from_station: shop.walk_time_from_station ?? null,
+        }));
         setShops(shopsData);
       } else {
         setShops([]); // dataがnullやundefinedの場合も空配列をセット
       }
       setLoading(false);
-      setIsSearching(false); // Set searching to false
+      setIsSearching(false); // 検索中フラグを解除
     };
 
     getShops();
-  }, [supabase, appliedFilters]); // Depend on appliedFilters
+  }, [supabase, appliedFilters]); // appliedFiltersの変更を監視
 
+  // 利用可能なカテゴリを動的に生成（現在表示されている店舗から抽出）
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     shops.forEach((shop) => {
@@ -120,6 +154,7 @@ export default function HomePageClient() {
     return ["すべて", ...Array.from(categories)];
   }, [shops]);
 
+  // ローディング中の表示
   if (loading) {
     return (
       <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
@@ -140,15 +175,16 @@ export default function HomePageClient() {
 
   return (
     <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
+      {/* フィルターとソート機能を持つ店舗リストコンポーネント */}
       <FilterableShopList
-        key={JSON.stringify(appliedFilters)} // Key to force remount on filter change
+        key={JSON.stringify(appliedFilters)} // フィルター変更時にコンポーネントを強制的に再マウント
         initialShops={shops}
         initialRowCount={2}
         availableCategories={availableCategories}
         onNavigate={handleNavigate}
         headerKeyword={appliedFilters.keyword}
         isSearching={isSearching}
-        onSearchSubmit={setAppliedFilters} // Pass setter for appliedFilters
+        onSearchSubmit={setAppliedFilters} // appliedFiltersのセッターを渡す
       />
     </main>
   );

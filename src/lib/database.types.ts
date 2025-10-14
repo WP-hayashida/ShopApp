@@ -139,8 +139,11 @@ export type Database = {
           created_at: string
           detailed_category: string | null
           id: string
+          latitude: number | null
           location: string | null
+          longitude: number | null
           name: string
+          nearest_station_name: string | null
           owner_id: string | null
           photo_url: string | null
           price: string | null
@@ -150,6 +153,7 @@ export type Database = {
           tags: string[] | null
           url: string | null
           user_id: string | null
+          walk_time_from_station: number | null
         }
         Insert: {
           business_hours?: string | null
@@ -158,8 +162,11 @@ export type Database = {
           created_at?: string
           detailed_category?: string | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           name: string
+          nearest_station_name?: string | null
           owner_id?: string | null
           photo_url?: string | null
           price?: string | null
@@ -169,6 +176,7 @@ export type Database = {
           tags?: string[] | null
           url?: string | null
           user_id?: string | null
+          walk_time_from_station?: number | null
         }
         Update: {
           business_hours?: string | null
@@ -177,8 +185,11 @@ export type Database = {
           created_at?: string
           detailed_category?: string | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           name?: string
+          nearest_station_name?: string | null
           owner_id?: string | null
           photo_url?: string | null
           price?: string | null
@@ -188,6 +199,7 @@ export type Database = {
           tags?: string[] | null
           url?: string | null
           user_id?: string | null
+          walk_time_from_station?: number | null
         }
         Relationships: []
       }
@@ -197,29 +209,35 @@ export type Database = {
     }
     Functions: {
       get_shops_sorted_by_likes: {
-        Args: {
-          category_filter: string[] | null
-          keyword: string
-          location_filter: string
-        }
+        Args:
+          | {
+              category_filter: string[]
+              keyword: string
+              location_filter: string
+            }
+          | {
+              category_filter: string
+              keyword: string
+              location_filter: string
+            }
         Returns: {
-          business_hours: string | null
-          category: string[] | null
-          comments: string | null
+          business_hours: string
+          category: string[]
+          comments: string
           created_at: string
-          detailed_category: string | null
+          detailed_category: string
           id: string
-          location: string | null
+          location: string
           name: string
-          owner_id: string | null
-          photo_url: string | null
-          price: string | null
-          rating: number | null
-          review_count: number | null
-          searchable_categories_text: string | null
-          tags: string[] | null
-          url: string | null
-          user_id: string | null
+          owner_id: string
+          photo_url: string
+          price: string
+          rating: number
+          review_count: number
+          searchable_categories_text: string
+          tags: string[]
+          url: string
+          user_id: string
         }[]
       }
       gtrgm_compress: {
@@ -243,25 +261,50 @@ export type Database = {
         Returns: unknown
       }
       search_shops: {
-        Args: {
-          category_filter: string[] | null
-          keyword: string
-          location_filter: string
-        }
+        Args:
+          | {
+              category_filter?: string[] | null;
+              keyword?: string;
+              location_filter?: string;
+              search_lat?: number | null;
+              search_lng?: number | null;
+              search_radius?: number | null;
+              sort_by?: string;
+              current_user_id?: string | null;
+            }
+          | {
+              category_filter?: string[] | null;
+              keyword?: string;
+              location_filter?: string;
+              search_lat?: number | null;
+              search_lng?: number | null;
+              search_radius?: number | null;
+              sort_by?: string;
+              current_user_id?: string | null;
+            }
         Returns: {
-          business_hours: string | null
-          category: string[] | null
-          comments: string | null
+          business_hours: string
+          category: string[]
+          comments: string
           created_at: string
-          detailed_category: string | null
+          detailed_category: string
           id: string
-          like_count: number | null
-          location: string | null
+          like_count: number
+          location: string
           name: string
-          photo_url: string | null
-          url: string | null
-          user_id: string | null
-          searchable_categories_text: string | null
+          photo_url: string
+          searchable_categories_text: string
+          url: string
+          user_id: string
+          username: string
+          avatar_url: string | null
+          rating: number
+          review_count: number
+          latitude: number | null
+          longitude: number | null
+          nearest_station_name: string | null
+          walk_time_from_station: number | null
+          liked: boolean
         }[]
       }
       set_limit: {

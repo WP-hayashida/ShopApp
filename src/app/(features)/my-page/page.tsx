@@ -98,7 +98,7 @@ export default function MyPage() {
 
         // フィルターを適用
         if (filters.keyword) {
-          shopsQuery = shopsQuery.ilike("name", `%${filters.keyword}%`);
+          shopsQuery = shopsQuery.ilike("name", `%${filters.keyword as string}%`);
         }
         if (filters.location) {
           shopsQuery = shopsQuery.eq("location", filters.location);
@@ -106,7 +106,8 @@ export default function MyPage() {
         if (filters.category && filters.category.length > 0) {
           shopsQuery = shopsQuery.contains("category", filters.category);
         }
-        const [field, order] = filters.sortBy.split(".");
+        const sortByValue = (filters.sortBy || defaultSearchFilters.sortBy) as string;
+        const [field, order] = sortByValue.split(".");
         if (field && order) {
           shopsQuery = shopsQuery.order(field, { ascending: order === "asc" });
         }
@@ -152,7 +153,7 @@ export default function MyPage() {
           if (filters.keyword) {
             likedShopsQuery = likedShopsQuery.ilike(
               "name",
-              `%${filters.keyword}%`
+              `%${filters.keyword as string}%`
             );
           }
           if (filters.location) {
@@ -164,7 +165,8 @@ export default function MyPage() {
               filters.category
             );
           }
-          const [likedField, likedOrder] = filters.sortBy.split(".");
+          const likedSortByValue = (filters.sortBy || defaultSearchFilters.sortBy) as string;
+          const [likedField, likedOrder] = likedSortByValue.split(".");
           if (likedField && likedOrder) {
             likedShopsQuery = likedShopsQuery.order(likedField, {
               ascending: likedOrder === "asc",

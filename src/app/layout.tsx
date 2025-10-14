@@ -1,6 +1,8 @@
 'use client'; // Add use client directive
 
 
+import { APIProvider } from "@vis.gl/react-google-maps";
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -32,10 +34,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SearchProvider>
-          <Header />
-          <main>{children}</main>
-        </SearchProvider>
+        <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string} libraries={['places', 'geocoding', 'routes']}>
+          <SearchProvider>
+            <Header />
+            <main>{children}</main>
+          </SearchProvider>
+        </APIProvider>
       </body>
     </html>
   );

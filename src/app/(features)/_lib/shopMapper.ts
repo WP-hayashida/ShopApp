@@ -17,7 +17,15 @@ export interface RawSupabaseShop {
   likes: { user_id: string }[];
   ratings: { rating: number | null }[];
   reviews: { id: string }[];
-  searchable_categories_text: string | null; // Add this line
+  searchable_categories_text: string | null;
+  // --- Google Maps Platform 関連の追加フィールド ---
+  latitude?: number | null;
+  longitude?: number | null;
+  place_id?: string | null;
+  formatted_address?: string | null;
+  nearest_station_name?: string | null;
+  nearest_station_place_id?: string | null;
+  walk_time_from_station?: number | null;
 }
 
 /**
@@ -82,6 +90,14 @@ export async function mapSupabaseShopToShop(
     liked: currentUserId ? shopLikes.some((like: { user_id: string }) => like.user_id === currentUserId) : false,
     rating: parseFloat(averageRating.toFixed(1)),
     reviewCount: shopReviews.length,
-    searchable_categories_text: rawShop.searchable_categories_text ?? null, // Add this line
+    searchable_categories_text: rawShop.searchable_categories_text ?? null,
+    // --- Google Maps Platform 関連の追加フィールド ---
+    latitude: rawShop.latitude ?? null,
+    longitude: rawShop.longitude ?? null,
+    place_id: rawShop.place_id ?? null,
+    formatted_address: rawShop.formatted_address ?? null,
+    nearest_station_name: rawShop.nearest_station_name ?? null,
+    nearest_station_place_id: rawShop.nearest_station_place_id ?? null,
+    walk_time_from_station: rawShop.walk_time_from_station ?? null,
   };
 }
