@@ -7,9 +7,10 @@ import { FormEvent, useEffect, useState, useMemo } from "react";
 import { ShopPayload } from "../_lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Command, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -48,13 +49,13 @@ function ShopNewForm({ user }: { user: User }) {
   const [latitude, setLatitude] = useState<number | null>(null); // 店舗の緯度
   const [longitude, setLongitude] = useState<number | null>(null); // 店舗の経度
   const [suggestions, setSuggestions] = useState<AutocompletePrediction[]>([]); // オートコンプリートの候補リスト
-  const [showSuggestions, setShowSuggestions] = useState(false); // オートコンプリート候補の表示/非表示
   const [photo, setPhoto] = useState<File | null>(null); // 投稿する写真ファイル
   const [url, setUrl] = useState(""); // 店舗のウェブサイトURL
   const [startTime, setStartTime] = useState(""); // 営業時間（開始）
   const [endTime, setEndTime] = useState(""); // 営業時間（終了）
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 選択されたカテゴリ
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false); // カテゴリ選択ポップオーバーの開閉状態
+  const [autocompletePopoverOpen, setAutocompletePopoverOpen] = useState(false); // オートコンプリートポップオーバーの開閉状態
   const [detailedCategory, setDetailedCategory] = useState(""); // 詳細カテゴリ
   const [comments, setComments] = useState(""); // コメント
   const [loading, setLoading] = useState(false); // フォーム送信中のローディング状態
@@ -67,7 +68,7 @@ function ShopNewForm({ user }: { user: User }) {
   useEffect(() => {
     if (name.length < 2) {
       setSuggestions([]);
-      setShowSuggestions(false);
+      setAutocompletePopoverOpen(false); // Popoverを閉じる
       return;
     }
 
@@ -82,13 +83,14 @@ function ShopNewForm({ user }: { user: User }) {
 
         if (data.predictions && data.predictions.length > 0) {
           setSuggestions(data.predictions);
-          setShowSuggestions(true);
+          setAutocompletePopoverOpen(true); // Popoverを開く
         } else {
           setSuggestions([]);
-          setShowSuggestions(false);
+          setAutocompletePopoverOpen(false); // Popoverを閉じる
         }
       } catch (err) {
         console.error("Autocomplete fetch error:", err);
+        setAutocompletePopoverOpen(false); // エラー時もPopoverを閉じる
       }
     }, 500);
 
@@ -103,7 +105,7 @@ function ShopNewForm({ user }: { user: User }) {
     // 検索時と保存時のデータを一致させるため、サジェストの文字列を場所(address)として設定
     setAddressInput(suggestion.description);
     setSuggestions([]);
-    setShowSuggestions(false);
+    setAutocompletePopoverOpen(false); // Popoverを閉じる
 
     // 詳細情報（正確な名前、緯度経度）を取得
     console.log(`Fetching details for placeId: "${suggestion.place_id}"`);
@@ -215,9 +217,9 @@ function ShopNewForm({ user }: { user: User }) {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl py-10">
-      <h1 className="text-3xl font-bold mb-6">新しいお店を投稿する</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="container mx-auto max-w-2xl py-10 px-4">
+      <h1 className="text-3xl font-bold mb-8">新しいお店を投稿する</h1>
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* 店舗名入力フィールド */}
         <div className="space-y-2 relative">
           <Label htmlFor="name">店舗名</Label>
@@ -225,27 +227,33 @@ function ShopNewForm({ user }: { user: User }) {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="例: 大砲ラーメン 本店"
             autoComplete="off"
             required
           />
           {/* オートコンプリート候補表示 */}
-          {showSuggestions && suggestions.length > 0 && (
-            <Command className="absolute z-10 w-full bg-background border rounded-md mt-1 shadow-lg">
-              <CommandList>
-                {suggestions.map((suggestion) => (
-                  <CommandItem
-                    key={suggestion.place_id}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onSelect={() => handleSuggestionSelect(suggestion)}
-                  >
-                    {suggestion.description}
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </Command>
-          )}
+          <Popover open={autocompletePopoverOpen} onOpenChange={setAutocompletePopoverOpen}>
+            <PopoverTrigger asChild>
+              {/* This is a dummy trigger, the Input above acts as the visual trigger */}
+              <div />
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+              <Command className="relative z-10 w-full bg-background border rounded-md mt-1 shadow-lg">
+                <CommandList>
+                  <CommandEmpty>候補が見つかりません。</CommandEmpty>
+                  {suggestions.map((suggestion) => (
+                    <CommandItem
+                      key={suggestion.place_id}
+                      onMouseDown={(e) => e.preventDefault()} // Popoverが閉じるのを防ぐ
+                      onSelect={() => handleSuggestionSelect(suggestion)}
+                    >
+                      {suggestion.description}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         {/* 場所入力フィールド */}
         <div className="space-y-2">
@@ -423,7 +431,7 @@ export default function ShopNewPageWrapper() {
     return <div className="text-center py-10">読み込み中...</div>;
   if (!user) {
     return (
-      <div className="container mx-auto max-w-2xl py-10 text-center">
+      <div className="container mx-auto max-w-2xl py-10 px-4 text-center">
         <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
         <p>お店を投稿するにはサインインが必要です。</p>
         <Button onClick={handleSignIn} className="mt-4">
