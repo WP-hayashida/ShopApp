@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image'; // Import Image component
-import { ArrowLeft, Heart, Share2, MapPin, Star, ExternalLink, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, MapPin, Star, ExternalLink, MessageCircle, Train } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -34,6 +34,61 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
       timestamp: '5時間前',
     },
   ]);
+
+  const [walkingInfo, setWalkingInfo] = useState({
+    stationName: "",
+    walkTime: null as number | null,
+    loading: true,
+    error: null as string | null,
+  });
+
+  useEffect(() => {
+    if (store.latitude && store.longitude) {
+      const fetchWalkingTime = async () => {
+        setWalkingInfo({ stationName: "", walkTime: null, loading: true, error: null });
+        try {
+          const response = await fetch(
+            `/api/walk-time?lat=${store.latitude}&lng=${store.longitude}`
+          );
+          if (!response.ok) {
+            if (response.status === 404) {
+              setWalkingInfo({
+                stationName: "",
+                walkTime: null,
+                loading: false,
+                error: "近くに駅が見つかりませんでした。",
+              });
+              return;
+            }
+            throw new Error("Failed to fetch walking time");
+          }
+          const data = await response.json();
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          setWalkingInfo({
+            stationName: data.stationName,
+            walkTime: data.walkTime,
+            loading: false,
+            error: null,
+          });
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "An unknown error occurred";
+          setWalkingInfo({
+            stationName: "",
+            walkTime: null,
+            loading: false,
+            error: errorMessage,
+          });
+          console.error(err);
+        }
+      };
+      fetchWalkingTime();
+    } else {
+      setWalkingInfo({ stationName: "", walkTime: null, loading: false, error: null });
+    }
+  }, [store.latitude, store.longitude]);
 
   const handleLike = () => {
     const newLikedStatus = !isLiked;
@@ -232,16 +287,53 @@ export function StoreDetail({ store, onNavigate, onLikeToggle }: StoreDetailProp
             {/* Action Buttons */}
             <Card>
               <CardContent className="p-4 space-y-3">
-                <Button className="w-full" size="lg">
-                  <ExternalLink size={16} className="mr-2" />
-                  ウェブサイトを見る
-                </Button>
-                <Button variant="outline" className="w-full" size="lg">
-                  <MapPin size={16} className="mr-2" />
-                  地図で見る
-                </Button>
+                {store.url && (
+                  <a href={store.url} target="_blank" rel="noopener noreferrer">
+                    <Button className="w-full" size="lg">
+                      <ExternalLink size={16} className="mr-2" />
+                      ウェブサイトを見る
+                    </Button>
+                  </a>
+                )}
+                {store.latitude && store.longitude && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${store.latitude},${store.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" className="w-full" size="lg">
+                      <MapPin size={16} className="mr-2" />
+                      地図で見る
+                    </Button>
+                  </a>
+                )}
               </CardContent>
             </Card>
+
+            {/* Walking Time Info */}
+            {(walkingInfo.loading || (walkingInfo.walkTime && !walkingInfo.error)) && (
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Train size={20} className="text-muted-foreground" />
+                    {walkingInfo.loading ? (
+                      <div className="text-sm text-muted-foreground">
+                        最寄り駅を検索中...
+                      </div>
+                    ) : walkingInfo.walkTime ? (
+                      <div>
+                        <div className="font-medium">
+                          {walkingInfo.stationName}駅
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          徒歩 約{walkingInfo.walkTime}分
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Related Stores */}
             <Card>

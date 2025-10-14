@@ -114,6 +114,8 @@ export default function EditShopPage() {
     category: "",
     detailedCategory: "",
     comments: "",
+    address: "", // 追加
+    nearestStationInput: "", // 追加
   });
 
   const [loading, setLoading] = useState(false);
@@ -186,6 +188,8 @@ export default function EditShopPage() {
         category: shopData.category?.[0] ?? "", // 配列の最初の要素を設定
         detailedCategory: shopData.detailed_category ?? "",
         comments: shopData.comments ?? "",
+        address: "",
+        nearestStationInput: "",
       });
       setInitialPhotoUrl(shopData.photo_url);
 

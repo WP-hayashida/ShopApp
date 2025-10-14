@@ -1,329 +1,304 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { User } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useState, useMemo } from "react";
+import { ShopPayload } from "../_lib/types";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Command, Tag } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command";
+  CommandList,
+} from "cmdk";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@radix-ui/react-popover";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-
-import { Badge } from "@/components/ui/badge";
-import { categories as predefinedCategories } from "@/config/categories"; // Import categories from config
-import { Tag } from "lucide-react";
-import { ShopPayload } from "../_lib/types"; // Import ShopPayload
-
-// 定数：都道府県リスト
-const prefectures = [
-  "北海道",
-  "青森県",
-  "岩手県",
-  "宮城県",
-  "秋田県",
-  "山形県",
-  "福島県",
-  "茨城県",
-  "栃木県",
-  "群馬県",
-  "埼玉県",
-  "千葉県",
-  "東京都",
-  "神奈川県",
-  "新潟県",
-  "富山県",
-  "石川県",
-  "福井県",
-  "山梨県",
-  "長野県",
-  "岐阜県",
-  "静岡県",
-  "愛知県",
-  "三重県",
-  "滋賀県",
-  "京都府",
-  "大阪府",
-  "兵庫県",
-  "奈良県",
-  "和歌山県",
-  "鳥取県",
-  "島根県",
-  "岡山県",
-  "広島県",
-  "山口県",
-  "徳島県",
-  "香川県",
-  "愛媛県",
-  "高知県",
-  "福岡県",
-  "佐賀県",
-  "長崎県",
-  "熊本県",
-  "大分県",
-  "宮崎県",
-  "鹿児島県",
-  "沖縄県",
-];
+import { APIProvider } from "@vis.gl/react-google-maps";
+import { categories as predefinedCategories } from "@/config/categories";
 
 /**
- * 新しいお店を投稿するページコンポーネント
+ * オートコンプリートの予測結果の型定義
  */
-export default function ShopNewPage() {
-  const supabase = createClient();
+interface AutocompletePrediction {
+  description: string; // 表示される地名
+  place_id: string; // Google Places APIで場所の詳細を取得するためのID
+}
+
+/**
+ * 新しいお店を投稿するためのフォームコンポーネント
+ * @param user - 現在ログインしているユーザー情報
+ */
+function ShopNewForm({ user }: { user: User }) {
+  const supabase = useMemo(() => createClient(), []); // awaitを削除し、useMemoで初期化
   const router = useRouter();
-  // ステート変数の定義
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
 
-  // フォームの各フィールドのステート
-  const [name, setName] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [url, setUrl] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [location, setLocation] = useState(prefectures[12]); // デフォルトを東京に設定
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 変更
-  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
-  const [detailedCategory, setDetailedCategory] = useState("");
-  const [comments, setComments] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // フォームの各入力フィールドに対応するstate
+  const [name, setName] = useState(""); // 店舗名
+  const [addressInput, setAddressInput] = useState(""); // 場所入力フィールドのテキスト（検索と保存に利用）
+  const [latitude, setLatitude] = useState<number | null>(null); // 店舗の緯度
+  const [longitude, setLongitude] = useState<number | null>(null); // 店舗の経度
+  const [suggestions, setSuggestions] = useState<AutocompletePrediction[]>([]); // オートコンプリートの候補リスト
+  const [showSuggestions, setShowSuggestions] = useState(false); // オートコンプリート候補の表示/非表示
+  const [photo, setPhoto] = useState<File | null>(null); // 投稿する写真ファイル
+  const [url, setUrl] = useState(""); // 店舗のウェブサイトURL
+  const [startTime, setStartTime] = useState(""); // 営業時間（開始）
+  const [endTime, setEndTime] = useState(""); // 営業時間（終了）
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 選択されたカテゴリ
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false); // カテゴリ選択ポップオーバーの開閉状態
+  const [detailedCategory, setDetailedCategory] = useState(""); // 詳細カテゴリ
+  const [comments, setComments] = useState(""); // コメント
+  const [loading, setLoading] = useState(false); // フォーム送信中のローディング状態
+  const [error, setError] = useState<string | null>(null); // エラーメッセージ
 
-  // 副作用フック：ユーザー情報を取得
+  /**
+   * 店舗名入力時のオートコンプリート処理
+   * name stateの変更を監視し、Google Places Autocomplete APIを呼び出す
+   */
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-      setLoadingUser(false);
-    };
-    getUser();
-  }, [supabase.auth]);
-
-  // サインイン処理
-  const handleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-  };
-
-  // フォーム送信処理
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const {
-      data: { user: submitUser },
-    } = await supabase.auth.getUser();
-
-    if (!submitUser) {
-      setError("ユーザーが認証されていません。再度サインインしてください。");
+    if (name.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
+    // 入力遅延のためのタイマー（API呼び出しの頻度を抑える）
+    const handler = setTimeout(async () => {
+      console.log(`Fetching suggestions for: "${name}"`);
+      try {
+        // Next.jsのAPIルート経由でGoogle Places Autocomplete APIを呼び出す
+        const response = await fetch(`/api/autocomplete?input=${name}`);
+        const data = await response.json();
+        console.log("Received data from API:", data);
+
+        if (data.predictions && data.predictions.length > 0) {
+          setSuggestions(data.predictions);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (err) {
+        console.error("Autocomplete fetch error:", err);
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [name]);
+
+  /**
+   * オートコンプリート候補選択時の処理
+   * 選択された場所の詳細情報をGoogle Places APIから取得し、フォームに反映する
+   */
+  const handleSuggestionSelect = async (suggestion: AutocompletePrediction) => {
+    // 検索時と保存時のデータを一致させるため、サジェストの文字列を場所(address)として設定
+    setAddressInput(suggestion.description);
+    setSuggestions([]);
+    setShowSuggestions(false);
+
+    // 詳細情報（正確な名前、緯度経度）を取得
+    console.log(`Fetching details for placeId: "${suggestion.place_id}"`);
+    try {
+      // Next.jsのAPIルート経由でGoogle Places API Place Detailsを呼び出す
+      const response = await fetch(
+        `/placedetails?placeId=${suggestion.place_id}`
+      );
+      const data = await response.json();
+      console.log("Received place details:", data);
+
+      if (data.place) {
+        // 店舗名は詳細情報から取得した、より正確なもので上書き
+        setName(
+          data.place.displayName.text || suggestion.description.split(",")[0]
+        );
+        setLatitude(data.place.location?.latitude || null);
+        setLongitude(data.place.location?.longitude || null);
+      } else {
+        // 詳細取得に失敗した場合は、サジェストの文字列から店名を推測
+        setName(suggestion.description.split(",")[0]);
+      }
+    } catch (err) {
+      console.error("Place details fetch error:", err);
+      setName(suggestion.description.split(",")[0]); // エラー時も同様
+    }
+  };
+
+  /**
+   * フォーム送信時の処理
+   * 写真のアップロード、最寄り駅の計算、Supabaseへのデータ挿入を行う
+   */
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
       let photoUrl: string | null = null;
-
-      // 写真が選択されている場合、Supabase Storageにアップロード
+      // 写真が選択されていればSupabase Storageにアップロード
       if (photo) {
         const fileExt = photo.name.split(".").pop();
-        const fileName = `${submitUser.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("shop-photos")
           .upload(fileName, photo);
-
-        if (uploadError) {
-          throw new Error(
-            `写真のアップロードに失敗しました: ${uploadError.message}`
-          );
-        }
-
-        // アップロードした写真の公開URLを取得
+        if (uploadError)
+          throw new Error(`写真のアップロードに失敗: ${uploadError.message}`);
         const { data: publicUrlData } = supabase.storage
           .from("shop-photos")
           .getPublicUrl(uploadData.path);
         photoUrl = publicUrlData.publicUrl;
       }
-
-      // 営業時間を整形
       const businessHours =
         startTime && endTime ? `${startTime} - ${endTime}` : null;
 
-      // データベースに保存する店舗データを作成 (ShopPayload型を使用)
+      // 緯度・経度があれば、最寄り駅と徒歩時間を計算するAPIを呼び出す
+      let nearestStationName: string | null = null;
+      let walkTimeFromStation: number | null = null;
+      if (latitude && longitude) {
+        try {
+          const walkTimeResponse = await fetch(
+            `/api/walk-time?lat=${latitude}&lng=${longitude}`
+          );
+          if (walkTimeResponse.ok) {
+            const walkTimeData = await walkTimeResponse.json();
+            nearestStationName = walkTimeData.stationName;
+            walkTimeFromStation = walkTimeData.walkTime;
+          } else {
+            console.warn(
+              "Could not fetch walking time:",
+              await walkTimeResponse.text()
+            );
+          }
+        } catch (walkError) {
+          console.error("Error fetching walking time:", walkError);
+        }
+      }
+
+      // Supabaseに挿入するデータペイロードの構築
       const shopPayload: ShopPayload = {
         name,
         photo_url: photoUrl,
         url: url || null,
         business_hours: businessHours,
-        location: location || null,
-        category: selectedCategories.length > 0 ? selectedCategories : null, // string[]をそのまま使用
+        location: addressInput || null, // 検索と一致させるため、オートコンプリートのdescriptionを保存
+        latitude,
+        longitude,
+        category: selectedCategories.length > 0 ? selectedCategories : null,
         detailed_category: detailedCategory || null,
         comments: comments || null,
+        nearest_station_name: nearestStationName,
+        walk_time_from_station: walkTimeFromStation,
       };
-
-      // `shops`テーブルにデータを挿入
-      const { error: insertError } = await supabase.from("shops").insert({
-        ...shopPayload,
-        user_id: submitUser.id, // user_idはペイロードに含めず、ここで追加
-      });
-
-      if (insertError) {
-        throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
-      }
-
+      // Supabaseの'shops'テーブルにデータを挿入
+      const { error: insertError } = await supabase
+        .from("shops")
+        .insert({ ...shopPayload, user_id: user.id });
+      if (insertError)
+        throw new Error(`投稿の保存に失敗: ${insertError.message}`);
       alert("投稿が完了しました！");
-      router.push("/"); // ホームページにリダイレクト
+      router.push("/"); // 投稿完了後、トップページへ遷移
     } catch (err) {
-      let message = "投稿中にエラーが発生しました。";
-      if (err instanceof Error) {
-        message = err.message;
-      }
+      const message =
+        err instanceof Error ? err.message : "投稿中にエラーが発生しました。";
       setError(message);
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 入力フィールドでEnterキーが押されたときにフォームが送信されるのを防ぐ
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
-      e.preventDefault();
-    }
-  };
-
-  // ユーザー情報読み込み中の表示
-  if (loadingUser) {
-    return (
-      <div className="container mx-auto max-w-2xl py-10 text-center">
-        <p>読み込み中...</p>
-      </div>
-    );
-  }
-
-  // 未ログイン時の表示
-  if (!user) {
-    return (
-      <div className="container mx-auto max-w-2xl py-10 text-center">
-        <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
-        <p>お店を投稿するにはサインインが必要です。</p>
-        <Button onClick={handleSignIn} className="mt-4">
-          Googleでサインイン
-        </Button>
-      </div>
-    );
-  }
-
-  // メインのフォーム表示
   return (
     <div className="container mx-auto max-w-2xl py-10">
       <h1 className="text-3xl font-bold mb-6">新しいお店を投稿する</h1>
-      <form
-        onSubmit={handleSubmit}
-        onKeyDown={handleKeyDown}
-        className="space-y-6"
-      >
-        {/* 店舗名 */}
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 店舗名入力フィールド */}
+        <div className="space-y-2 relative">
           <Label htmlFor="name">店舗名</Label>
           <Input
             id="name"
             value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="例: 大砲ラーメン 本店"
+            autoComplete="off"
+            required
+          />
+          {/* オートコンプリート候補表示 */}
+          {showSuggestions && suggestions.length > 0 && (
+            <Command className="absolute z-10 w-full bg-background border rounded-md mt-1 shadow-lg">
+              <CommandList>
+                {suggestions.map((suggestion) => (
+                  <CommandItem
+                    key={suggestion.place_id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onSelect={() => handleSuggestionSelect(suggestion)}
+                  >
+                    {suggestion.description}
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </Command>
+          )}
+        </div>
+        {/* 場所入力フィールド */}
+        <div className="space-y-2">
+          <Label htmlFor="addressInput">場所</Label>
+          <Input
+            id="addressInput"
+            value={addressInput}
+            onChange={(e) => setAddressInput(e.target.value)}
+            placeholder="店舗名を検索するか、手動で住所を入力してください"
             required
           />
         </div>
-        {/* 写真 */}
+        {/* 写真アップロードフィールド */}
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
           <Input
             id="photo"
             type="file"
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            onChange={(e) =>
               setPhoto(e.target.files ? e.target.files[0] : null)
             }
             accept="image/*"
           />
         </div>
-        {/* URL */}
+        {/* URL入力フィールド */}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <Input
             id="url"
             type="url"
             value={url}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setUrl(e.target.value)
-            }
+            onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
           />
         </div>
-        {/* 営業時間 */}
+        {/* 営業時間入力フィールド */}
         <div className="space-y-2">
           <Label>営業時間</Label>
           <div className="flex items-center space-x-2">
             <Input
               type="time"
               value={startTime}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setStartTime(e.target.value)
-              }
+              onChange={(e) => setStartTime(e.target.value)}
             />
             <span>-</span>
             <Input
               type="time"
               value={endTime}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setEndTime(e.target.value)
-              }
+              onChange={(e) => setEndTime(e.target.value)}
             />
           </div>
         </div>
-        {/* 場所 */}
-        <div className="space-y-2">
-          <Label htmlFor="location">場所</Label>
-          <Select onValueChange={setLocation} defaultValue={location}>
-            <SelectTrigger id="location">
-              <SelectValue placeholder="都道府県を選択" />
-            </SelectTrigger>
-            <SelectContent>
-              {prefectures.map((pref) => (
-                <SelectItem key={pref} value={pref}>
-                  {pref}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {/* カテゴリ */}
+        {/* カテゴリ選択フィールド */}
         <div className="space-y-2">
           <Label htmlFor="categories">カテゴリ</Label>
           <Popover
@@ -334,7 +309,6 @@ export default function ShopNewPage() {
               <Button
                 variant="outline"
                 role="combobox"
-                aria-expanded={categoryPopoverOpen}
                 className="w-full justify-start text-left h-auto"
               >
                 <div className="flex items-center justify-between w-full">
@@ -347,7 +321,7 @@ export default function ShopNewPage() {
                       ))
                     ) : (
                       <span className="text-muted-foreground">
-                        カテゴリを選択してください
+                        カテゴリを選択
                       </span>
                     )}
                   </div>
@@ -373,13 +347,6 @@ export default function ShopNewPage() {
                     >
                       <Checkbox
                         checked={selectedCategories.includes(cat)}
-                        onCheckedChange={(checked) =>
-                          setSelectedCategories((prev) =>
-                            checked
-                              ? [...prev, cat]
-                              : prev.filter((c) => c !== cat)
-                          )
-                        }
                         className="mr-2"
                       />
                       {cat}
@@ -389,54 +356,87 @@ export default function ShopNewPage() {
               </Command>
             </PopoverContent>
           </Popover>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selectedCategories.map((cat) => (
-              <Badge
-                key={cat}
-                variant="secondary"
-                className="cursor-pointer"
-                onClick={() =>
-                  setSelectedCategories((prev) => prev.filter((c) => c !== cat))
-                }
-              >
-                {cat} ×
-              </Badge>
-            ))}
-          </div>
         </div>
-        {/* 詳細カテゴリ */}
+        {/* 詳細カテゴリ入力フィールド */}
         <div className="space-y-2">
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
           <Input
             id="detailedCategory"
             value={detailedCategory}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setDetailedCategory(e.target.value)
-            }
-            placeholder="例: スペシャルティコーヒー"
+            onChange={(e) => setDetailedCategory(e.target.value)}
+            placeholder="例: スペシャルティコーヒー, 豚骨ラーメン"
           />
         </div>
-        {/* コメント */}
+        {/* コメント入力フィールド */}
         <div className="space-y-2">
           <Label htmlFor="comments">コメント</Label>
           <Input
             id="comments"
             value={comments}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setComments(e.target.value)
-            }
-            placeholder="お店の雰囲気やおすすめメニューなどを記入してください"
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="お店の雰囲気やおすすめメニューなど"
           />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <Button
-          type="submit"
-          className="w-full bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          disabled={loading}
-        >
+        <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "投稿中..." : "投稿する"}
         </Button>
       </form>
     </div>
+  );
+}
+
+/**
+ * 新しいお店投稿ページのラッパーコンポーネント
+ * ユーザー認証状態の管理とGoogle Maps API Providerの提供を行う
+ */
+export default function ShopNewPageWrapper() {
+  const supabase = useMemo(() => createClient(), []);
+  const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
+  const [loadingUser, setLoadingUser] = useState(true); // ユーザー情報ロード中の状態
+
+  // ユーザー認証状態の取得
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+      setLoadingUser(false);
+    };
+    getUser();
+  }, [supabase.auth]);
+
+  // Googleサインイン処理
+  const handleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+  // Google Maps APIキーのチェック
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey)
+    return (
+      <div className="text-center py-10">APIキーが設定されていません。</div>
+    );
+  if (loadingUser)
+    return <div className="text-center py-10">読み込み中...</div>;
+  if (!user) {
+    return (
+      <div className="container mx-auto max-w-2xl py-10 text-center">
+        <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
+        <p>お店を投稿するにはサインインが必要です。</p>
+        <Button onClick={handleSignIn} className="mt-4">
+          Googleでサインイン
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    // Google Maps API ProviderでAPIキーを提供
+    <APIProvider apiKey={apiKey}>
+      <ShopNewForm user={user} />
+    </APIProvider>
   );
 }

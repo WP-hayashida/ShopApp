@@ -27,6 +27,14 @@ export interface Shop {
   tags: string[]; // タグ
   user: User; // 投稿ユーザー情報
   liked: boolean; // 現在のユーザーがいいねしているか
+  // --- Google Maps Platform 関連の追加フィールド ---
+  latitude: number | null;
+  longitude: number | null;
+  place_id: string | null;
+  formatted_address: string | null;
+  nearest_station_name: string | null;
+  nearest_station_place_id: string | null;
+  walk_time_from_station: number | null;
 }
 
 /**
@@ -42,6 +50,9 @@ export interface ShopFormInput {
   category: string; // フォームでは単一選択
   detailedCategory: string;
   comments: string;
+  // --- Google Maps Platform 関連の追加フィールド ---
+  address: string; // 住所入力用
+  nearestStationInput: string; // 最寄り駅入力用
 }
 
 /**
@@ -57,14 +68,26 @@ export interface ShopPayload {
   detailed_category: string | null;
   comments: string | null;
   // user_idはsupabase側で自動設定されるか、別途渡す
+  // --- Google Maps Platform 関連の追加フィールド ---
+  latitude?: number | null;
+  longitude?: number | null;
+  place_id?: string | null;
+  formatted_address?: string | null;
+  nearest_station_name?: string | null;
+  nearest_station_place_id?: string | null;
+  walk_time_from_station?: number | null;
 }
 
 /**
  * 検索フィルターの型定義
  */
 export interface SearchFilters {
-  keyword: string;
-  location: string;
-  category: string[];
-  sortBy: string;
+  keyword?: string; // キーワード検索（店名、詳細カテゴリ、コメント、検索用カテゴリテキスト、最寄り駅名が対象）
+  search_lat?: number | null; // 周辺検索の中心緯度
+  search_lng?: number | null; // 周辺検索の中心経度
+  search_radius?: number | null; // 周辺検索の半径（メートル単位）。nullの場合は周辺検索を行わない
+  location_text?: string; // UI表示用の場所テキスト（オートコンプリートの選択結果やフリーワード）
+  category?: string[]; // カテゴリフィルター（複数選択可能）
+  sortBy?: string; // 並び順（例: 'created_at.desc', 'likes.desc'）
+  location?: string;
 }
