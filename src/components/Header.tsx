@@ -4,7 +4,7 @@ import React, {
   useMemo,
   useRef,
 } from "react"; // Added useRef
-import { Search, LogOut, Plus, UserRoundPlus } from "lucide-react";
+import { Search, LogOut, Plus, UserRoundPlus, Menu } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -135,12 +135,12 @@ export function Header() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center space-x-3">
+          {/* Actions for Desktop */}
+          <div className="hidden md:flex items-center space-x-3">
             <Link href="/submit-shop">
               <Button
                 variant="default"
-                className="hidden sm:flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Plus className="size-4" />
                 <span>投稿</span>
@@ -195,6 +195,57 @@ export function Header() {
                   Sign In
                 </Button>
               ))}
+          </div>
+
+          {/* Hamburger Menu for Mobile */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="size-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                {!loading &&
+                  (user ? (
+                    <>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {user.user_metadata?.name || "User"}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/submit-shop">
+                          <Plus className="mr-2 h-4 w-4" />
+                          投稿
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/my-page">
+                          <UserRoundPlus className="mr-2 h-4 w-4" />
+                          My Page
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={handleSignIn}>
+                      <UserRoundPlus className="mr-2 h-4 w-4" />
+                      Sign In
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
