@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react"; // Added useRef
-import { Search, LogOut, Plus, UserRoundPlus, Menu } from "lucide-react";
+import { Search, LogOut, Plus, UserRoundPlus, Menu, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -135,7 +135,11 @@ export function Header() {
                 <Search className="size-6" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent side="left" sideOffset={10} className="w-fit p-0 border-none shadow-none bg-transparent">
+            <PopoverContent
+              side="left"
+              sideOffset={10}
+              className="w-fit p-0 border-none shadow-none bg-transparent"
+            >
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
@@ -242,6 +246,12 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
+                        <Link href="/shops"> {/* Added this item */}
+                          <Store className="mr-2 h-4 w-4" /> {/* Using Store icon for list */}
+                          お店一覧
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link href="/my-page">
                           <UserRoundPlus className="mr-2 h-4 w-4" />
                           My Page
@@ -254,10 +264,18 @@ export function Header() {
                       </DropdownMenuItem>
                     </>
                   ) : (
-                    <DropdownMenuItem onClick={handleSignIn}>
-                      <UserRoundPlus className="mr-2 h-4 w-4" />
-                      Sign In
-                    </DropdownMenuItem>
+                    <> {/* Added fragment for multiple items */}
+                      <DropdownMenuItem asChild>
+                        <Link href="/shops"> {/* Added this item for logged out users */}
+                          <Store className="mr-2 h-4 w-4" />
+                          お店一覧
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleSignIn}>
+                        <UserRoundPlus className="mr-2 h-4 w-4" />
+                        Sign In
+                      </DropdownMenuItem>
+                    </>
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>

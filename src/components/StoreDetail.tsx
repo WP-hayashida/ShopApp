@@ -9,6 +9,9 @@ import {
   ExternalLink,
   MessageCircle,
   Train,
+  Clock,
+  Phone,
+  BadgeJapaneseYen,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
@@ -16,6 +19,12 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Textarea } from "./ui/textarea";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "./ui/accordion"; // Added Accordion imports
 import { Shop } from "@/app/(features)/_lib/types";
 import { getCategoryConfig } from "./CategoryConfig";
 
@@ -32,6 +41,60 @@ export function StoreDetail({
 }: StoreDetailProps) {
   const [isLiked, setIsLiked] = useState(store.liked);
   const [likesCount, setLikesCount] = useState(store.likes);
+  const dummyPhoneNumber = "03-1234-5678";
+  const dummyPriceRange = "¥1,000 - ¥3,000";
+  const weeklyHoursData = [
+    { day: "月", hours: "11:00 - 22:00" },
+    { day: "火", hours: "11:00 - 22:00" },
+    { day: "水", hours: "定休日" },
+    { day: "木", hours: "11:00 - 22:00" },
+    { day: "金", hours: "11:00 - 23:00" },
+    { day: "土", hours: "12:00 - 23:00" },
+    { day: "日", hours: "12:00 - 21:00" },
+  ];
+
+  const getTodayHours = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+    const days = ["日", "月", "火", "水", "木", "金", "土"];
+    const todayDay = days[dayOfWeek];
+    return weeklyHoursData.find((item) => item.day === todayDay);
+  };
+
+  const getStatusAndColor = (hours: string) => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    if (hours === "定休日") {
+      return { status: "定休日", color: "text-red-500" };
+    }
+
+    const [openTimeStr, closeTimeStr] = hours.split(" - ");
+    if (!openTimeStr || !closeTimeStr) {
+      return { status: "時間外", color: "text-muted-foreground" };
+    }
+
+    const [openHour, openMinute] = openTimeStr.split(":").map(Number);
+    const [closeHour, closeMinute] = closeTimeStr.split(":").map(Number);
+
+    const isOpen =
+      (currentHour > openHour ||
+        (currentHour === openHour && currentMinute >= openMinute)) &&
+      (currentHour < closeHour ||
+        (currentHour === closeHour && currentMinute < closeMinute));
+
+    return {
+      status: isOpen ? "営業時間内" : "時間外",
+      color: isOpen ? "text-green-500" : "text-muted-foreground",
+    };
+  };
+
+  const todayHours = getTodayHours();
+  const { status: todayStatus, color: todayColor } = todayHours
+    ? getStatusAndColor(todayHours.hours)
+    : { status: "不明", color: "text-muted-foreground" };
+
   const [comment, setComment] = useState("");
   const [comments] = useState([
     {
@@ -167,6 +230,51 @@ export function StoreDetail({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* 店舗名とバッジをここに配置 */}
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{store.name}</h1>
+              <div className="flex flex-wrap gap-1 items-center"> {/* Added items-center */}
+                {store.category.map((cat, index) => {
+                  const catConfig = getCategoryConfig(cat);
+                  const CatIconComponent = catConfig.icon;
+                  return (
+                    <Badge
+                      key={index}
+                      className={`${catConfig.bgColor} px-2 py-1 border ${catConfig.borderColor}`}
+                    >
+                      <CatIconComponent
+                        className={`size-3 ${catConfig.textColor}`}
+                      />
+                      <span
+                        className={`text-xs font-medium ${catConfig.textColor} ml-1`}
+                      >
+                        {cat}
+                      </span>
+                    </Badge>
+                  );
+                })}
+                {(walkingInfo.loading ||
+                  (walkingInfo.walkTime && !walkingInfo.error)) && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-1 ml-auto" // Added ml-auto here
+                  >
+                    <Train
+                      size={16}
+                    />
+                    {walkingInfo.loading ? (
+                      <span className="text-xs">検索中...</span>
+                    ) : walkingInfo.walkTime ? (
+                      <span className="text-xs">
+                        {walkingInfo.stationName} 徒歩約{walkingInfo.walkTime}分
+                      </span>
+                    ) : null}
+                  </Button>
+                )}
+              </div>
+            </div>
+
             {/* Store Image */}
             <Card className="overflow-hidden">
               <div className="relative">
@@ -178,59 +286,47 @@ export function StoreDetail({
                   priority // Prioritize loading for LCP
                   className="w-full h-64 md:h-80 object-cover"
                 />
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleLike}
-                    className={`backdrop-blur-sm ${
-                      isLiked
-                        ? "bg-red-500/90 text-white hover:bg-red-600/90"
-                        : ""
-                    }`}
-                  >
-                    <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                    {likesCount}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleShare}
-                    className="backdrop-blur-sm"
-                  >
-                    <Share2 size={16} />
-                  </Button>
-                </div>
-                <div className="absolute bottom-4 left-4 flex flex-wrap gap-1">
-                  {store.category.map((cat, index) => {
-                    const catConfig = getCategoryConfig(cat);
-                    const CatIconComponent = catConfig.icon;
-                    return (
-                      <Badge
-                        key={index}
-                        className={`${catConfig.bgColor} backdrop-blur-sm px-2 py-1 border ${catConfig.borderColor}`}
-                      >
-                        <CatIconComponent
-                          className={`size-3 ${catConfig.textColor}`}
-                        />
-                        <span
-                          className={`text-xs font-medium ${catConfig.textColor} ml-1`}
-                        >
-                          {cat}
-                        </span>
-                      </Badge>
-                    );
-                  })}
-                </div>
               </div>
             </Card>
+
+            {/* Moved UI Elements (イイネボタンとシェアボタン、ユーザー情報) */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleLike}
+                  className={`${
+                    isLiked
+                      ? "bg-red-500/90 text-white hover:bg-red-600/90"
+                      : ""
+                  }`}
+                >
+                  <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                  {likesCount}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={handleShare}>
+                  <Share2 size={16} />
+                </Button>
+              </div>
+              <div className="flex items-center gap-3 ml-auto">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={store.user.avatar_url || ""} />
+                  <AvatarFallback>{store.user.username[0]}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-sm">
+                    {store.user.username}
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Store Info */}
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">{store.name}</h1>
                     <div className="flex items-center gap-2 mb-4">
                       <div className="flex items-center gap-1">
                         <Star
@@ -243,7 +339,81 @@ export function StoreDetail({
                       <span className="text-muted-foreground">
                         ({store.reviewCount}件のレビュー)
                       </span>
+                      {store.latitude && store.longitude && (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${store.latitude},${store.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-auto" // Added ml-auto here
+                        >
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                          >
+                            <MapPin
+                              size={16}
+                              className="mr-1"
+                            />
+                            MAP
+                          </Button>{" "}
+                        </a>
+                      )}
                     </div>
+
+                    {/* 新しい詳細情報セクション */}
+                    <div className="space-y-2 mb-4 text-muted-foreground text-sm">
+                      {store.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={16} />
+                          <span>
+                            {store.location.replace(store.name, "").trim()}
+                          </span>
+                        </div>
+                      )}
+                      {/* 営業時間 */}
+                      <div className="flex items-start gap-2">
+                        <Clock size={16} className="mt-1" />
+                        <div>
+                          {todayHours ? (
+                            <div className={`font-medium ${todayColor}`}>
+                              今日 ({todayHours.day}): {todayHours.hours}
+                            </div>
+                          ) : (
+                            <div className="text-muted-foreground">
+                              営業時間不明
+                            </div>
+                          )}
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="item-1">
+                              <AccordionTrigger className="py-1 text-sm text-muted-foreground hover:no-underline">
+                                今週の営業時間を見る
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                {weeklyHoursData.map((item, index) => (
+                                  <div key={index} className="flex justify-between text-sm py-0.5">
+                                    <span>{item.day}</span>
+                                    <span className="text-muted-foreground"> {/* Changed this line */}
+                                      {item.hours}
+                                    </span>
+                                  </div>
+                                ))}
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        </div>
+                      </div>
+                      {/* 電話番号 */}
+                      <div className="flex items-center gap-2">
+                        <Phone size={16} />
+                        <span>{dummyPhoneNumber}</span>
+                      </div>
+                      {/* 価格帯 */}
+                      <div className="flex items-center gap-2">
+                        <BadgeJapaneseYen size={16} />
+                        <span>{dummyPriceRange}</span>
+                      </div>
+                    </div>
+
                     <p className="text-muted-foreground leading-relaxed">
                       {store.description}
                     </p>
@@ -259,22 +429,7 @@ export function StoreDetail({
 
                   <Separator />
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={store.user.avatar_url || ""} />
-                        <AvatarFallback>
-                          {store.user.username[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{store.user.username}</div>
-                        <div className="text-sm text-muted-foreground">
-                          @{store.user.username}
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="outline">フォロー</Button>
+                  <div className="flex items-center gap-2 mt-4">
                   </div>
                 </div>
               </CardContent>
@@ -350,46 +505,8 @@ export function StoreDetail({
                     </Button>
                   </a>
                 )}
-                {store.latitude && store.longitude && (
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${store.latitude},${store.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button variant="outline" className="w-full" size="lg">
-                      <MapPin size={16} className="mr-2" />
-                      地図で見る
-                    </Button>
-                  </a>
-                )}
               </CardContent>
             </Card>
-
-            {/* Walking Time Info */}
-            {(walkingInfo.loading ||
-              (walkingInfo.walkTime && !walkingInfo.error)) && (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Train size={20} className="text-muted-foreground" />
-                    {walkingInfo.loading ? (
-                      <div className="text-sm text-muted-foreground">
-                        最寄り駅を検索中...
-                      </div>
-                    ) : walkingInfo.walkTime ? (
-                      <div>
-                        <div className="font-medium">
-                          {walkingInfo.stationName}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          徒歩 約{walkingInfo.walkTime}分
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Related Stores */}
             <Card>
