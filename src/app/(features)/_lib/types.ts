@@ -27,6 +27,7 @@ export interface Shop {
   tags: string[]; // タグ
   user: User; // 投稿ユーザー情報
   liked: boolean; // 現在のユーザーがいいねしているか
+  price_range?: string; // 価格帯を追加
   // --- Google Maps Platform 関連の追加フィールド ---
   latitude: number | null;
   longitude: number | null;

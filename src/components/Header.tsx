@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react"; // Added useRef
+import React, { useState, useEffect, useMemo, useRef } from "react"; // Added useRef
 import { Search, LogOut, Plus, UserRoundPlus, Menu } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
@@ -20,6 +15,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useSearch } from "@/context/SearchContext"; // Import useSearch hook
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export function Header() {
   const supabase = useMemo(() => createClient(), []);
@@ -48,7 +48,9 @@ export function Header() {
     setIsComposing(true);
   };
 
-  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+  const handleCompositionEnd = (
+    e: React.CompositionEvent<HTMLInputElement>
+  ) => {
     setIsComposing(false);
     // After composition ends, immediately trigger search with the final value
     if (debounceTimeoutRef.current) {
@@ -101,7 +103,7 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <header className="sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -113,27 +115,40 @@ export function Header() {
               <span className="text-lg font-bold">SS</span>
             </div>
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">
+              <h1 className="text-xl font-semibold tracking-tight hidden md:block">
                 SpotShare
               </h1>
-              <p className="text-xs text-muted-foreground">Curated Places</p>
+              <p className="text-xs text-muted-foreground hidden md:block">
+                Curated Places
+              </p>
             </div>
           </Link>
 
-          {/* Search Bar */}
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="お店を検索..."
-                className="pl-10 bg-muted/50 border-border/60 focus:border-foreground/20 transition-colors"
-                value={localSearchTerm} // Use localSearchTerm for input value
-                onChange={handleKeywordChange}
-                onCompositionStart={handleCompositionStart}
-                onCompositionEnd={handleCompositionEnd}
-              />
-            </div>
-          </div>
+          {/* Search Popover Trigger */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto mr-2 md:mr-0"
+              >
+                <Search className="size-6" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent side="left" sideOffset={10} className="w-fit p-0 border-none shadow-none bg-transparent">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="お店を検索..."
+                  className="pl-10 bg-white/90 border-border/60 focus:border-foreground/20 transition-colors"
+                  value={localSearchTerm}
+                  onChange={handleKeywordChange}
+                  onCompositionStart={handleCompositionStart}
+                  onCompositionEnd={handleCompositionEnd}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Actions for Desktop */}
           <div className="hidden md:flex items-center space-x-3">
@@ -246,21 +261,6 @@ export function Header() {
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Mobile Search */}
-        <div className="md:hidden mt-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder="お店を検索..."
-              className="pl-10 bg-muted/50 border-border/60"
-              value={localSearchTerm} // Use localSearchTerm for input value
-              onChange={handleKeywordChange}
-              onCompositionStart={handleCompositionStart}
-              onCompositionEnd={handleCompositionEnd}
-            />
           </div>
         </div>
       </div>

@@ -244,9 +244,8 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
     <APIProvider apiKey={apiKey}>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="mb-4 ml-auto">
-            <SlidersHorizontal className="mr-2 h-4 w-4" />
-            検索・絞り込み
+          <Button variant="secondary" className="">
+            <SlidersHorizontal className="h-4 w-4" />
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
