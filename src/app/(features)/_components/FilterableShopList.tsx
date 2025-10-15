@@ -107,7 +107,7 @@ export default function FilterableShopList({
     <div className="flex flex-col items-center w-full">
       <div className="w-full flex justify-between items-center mb-4">
         {/* カテゴリバッジ */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto whitespace-nowrap py-2 flex-grow max-w-[calc(100%-4rem)]">
           {availableCategories.map((category) => (
             <Badge
               key={category}

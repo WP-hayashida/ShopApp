@@ -262,10 +262,10 @@ export default function MyPage() {
 
   // ログイン後の表示
   return (
-    <div className="container mx-auto max-w-4xl py-10">
+    <div className="container mx-auto max-w-2xl py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">マイページ</h1>
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue="favorites">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="favorites">お気に入りのお店</TabsTrigger>
           <TabsTrigger value="posts">投稿したお店</TabsTrigger>
