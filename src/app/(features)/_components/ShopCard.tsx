@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
 import { Heart, Star, MapPin, Clock, Eye, Share2, Bookmark } from 'lucide-react';
@@ -11,6 +9,9 @@ import { ImageWithFallback } from "@/components/figma/ImageWithFallback"; // Adj
 import { getCategoryConfig } from "@/components/CategoryConfig"; // Adjusted path
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js"; // Renamed to avoid conflict with our User interface
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger
+} from "@/components/ui/tooltip";
 
 interface ShopCardProps {
   shop: Shop; // 表示するお店の情報
@@ -79,14 +80,14 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
           <ImageWithFallback
             src={shop.imageUrl}
             alt={shop.name}
-            className="w-full h-48 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-36 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
             width={300} // Added width and height for Next/Image
             height={200}
             onClick={() => onNavigate('detail', shop)}
           />
           
           {/* Category Badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+          <div className="absolute top-3 left-3 flex gap-1 overflow-x-auto whitespace-nowrap pr-2 w-[calc(100%-2rem)]">
             {shop.category.map((cat, index) => {
               const catConfig = getCategoryConfig(cat);
               const CatIconComponent = catConfig.icon;
@@ -103,46 +104,10 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
               );
             })}
           </div>
-
-          {/* Like Button */}
-          <Button
-            size="icon"
-            variant="secondary"
-            className="absolute top-3 right-3 size-8 rounded-md bg-background/90 hover:bg-background border shadow-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleLikeToggle(); // Use existing handleLikeToggle
-            }}
-            disabled={loadingLike}
-          >
-            <Heart 
-              className={`size-4 ${
-                isLiked
-                  ? 'text-red-500 fill-red-500' 
-                  : 'text-muted-foreground'
-              }`}
-            />
-          </Button>
         </div>
 
         {/* Content Section */}
         <div className="p-4 space-y-3">
-          {/* User Info */}
-          <div className="flex items-center space-x-3">
-            <Avatar className="size-8 border">
-              <AvatarImage src={shop.user.avatar_url || ""} />
-              <AvatarFallback className="text-xs">{shop.user.username ? shop.user.username[0] : 'U'}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-medium">{shop.user.username}</p>
-              <p className="text-xs text-muted-foreground"> @{shop.user.username}</p>
-            </div>
-            <div className="flex items-center space-x-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">
-              <Star className="size-3 text-amber-600 fill-amber-600" />
-              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{shop.rating.toFixed(1)}</span>
-            </div>
-          </div>
-
           {/* Store Info */}
           <div className="space-y-2">
             <h3 
@@ -168,6 +133,12 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
                   <span>{shop.hours}</span>
                 </div>
               </div>
+              {shop.price_range && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">価格帯:</span>
+                  <span className="text-sm">{shop.price_range}</span>
+                </div>
+              )}
             </div>
 
             {/* Tags */}
@@ -203,6 +174,19 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
             </div>
 
             <div className="flex items-center space-x-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Avatar className="size-8 border cursor-pointer">
+                      <AvatarImage src={shop.user.avatar_url || ""} />
+                      <AvatarFallback className="text-xs">{shop.user.username ? shop.user.username[0] : 'U'}</AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{shop.user.username}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button variant="ghost" size="icon" className="size-8 hover:bg-muted/50">
                 <Share2 className="size-4" />
               </Button>
