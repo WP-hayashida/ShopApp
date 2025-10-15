@@ -68,9 +68,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ predictions });
   } catch (error) {
     console.error("Server-side fetch error:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
-      { error: "Failed to fetch autocomplete suggestions", details: errorMessage },
+      {
+        error: "Failed to fetch autocomplete suggestions",
+        details: errorMessage,
+      },
       { status: 500 }
     );
   }

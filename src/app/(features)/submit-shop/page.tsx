@@ -26,13 +26,18 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { categories as predefinedCategories } from "@/config/categories";
+import { CategorySelector } from "../_components/CategorySelector";
 
 /**
  * オートコンプリートの予測結果の型定義
  */
 interface AutocompletePrediction {
-  description: string; // 表示される地名
-  place_id: string; // Google Places APIで場所の詳細を取得するためのID
+  description: string;
+  place_id: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text: string;
+  };
 }
 
 /**
@@ -54,7 +59,6 @@ function ShopNewForm({ user }: { user: User }) {
   const [startTime, setStartTime] = useState(""); // 営業時間（開始）
   const [endTime, setEndTime] = useState(""); // 営業時間（終了）
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 選択されたカテゴリ
-  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false); // カテゴリ選択ポップオーバーの開閉状態
   const [autocompletePopoverOpen, setAutocompletePopoverOpen] = useState(false); // オートコンプリートポップオーバーの開閉状態
   const [detailedCategory, setDetailedCategory] = useState(""); // 詳細カテゴリ
   const [comments, setComments] = useState(""); // コメント
@@ -227,33 +231,42 @@ function ShopNewForm({ user }: { user: User }) {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onBlur={() => {
+              // 少し遅延させてから閉じることで、候補のクリックを可能にする
+              setTimeout(() => {
+                setAutocompletePopoverOpen(false);
+              }, 150);
+            }}
+            onFocus={() => {
+              // 入力履歴がある場合、再度フォーカスしたときに候補を表示する
+              if (suggestions.length > 0) {
+                setAutocompletePopoverOpen(true);
+              }
+            }}
             placeholder="例: 大砲ラーメン 本店"
             autoComplete="off"
             required
           />
           {/* オートコンプリート候補表示 */}
-          <Popover open={autocompletePopoverOpen} onOpenChange={setAutocompletePopoverOpen}>
-            <PopoverTrigger asChild>
-              {/* This is a dummy trigger, the Input above acts as the visual trigger */}
-              <div />
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-              <Command className="relative z-10 w-full bg-background border rounded-md mt-1 shadow-lg">
+          {autocompletePopoverOpen && suggestions.length > 0 && (
+            <div className="absolute z-50 w-full">
+              <Command className="bg-background border rounded-md mt-1 shadow-lg">
                 <CommandList>
                   <CommandEmpty>候補が見つかりません。</CommandEmpty>
                   {suggestions.map((suggestion) => (
                     <CommandItem
                       key={suggestion.place_id}
-                      onMouseDown={(e) => e.preventDefault()} // Popoverが閉じるのを防ぐ
+                      onMouseDown={(e) => e.preventDefault()} // onBlurが先に発火するのを防ぐ
                       onSelect={() => handleSuggestionSelect(suggestion)}
                     >
-                      {suggestion.description}
+                      {suggestion.structured_formatting?.main_text ||
+                        suggestion.description}
                     </CommandItem>
                   ))}
                 </CommandList>
               </Command>
-            </PopoverContent>
-          </Popover>
+            </div>
+          )}{" "}
         </div>
         {/* 場所入力フィールド */}
         <div className="space-y-2">
@@ -309,61 +322,10 @@ function ShopNewForm({ user }: { user: User }) {
         {/* カテゴリ選択フィールド */}
         <div className="space-y-2">
           <Label htmlFor="categories">カテゴリ</Label>
-          <Popover
-            open={categoryPopoverOpen}
-            onOpenChange={setCategoryPopoverOpen}
-          >
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                className="w-full justify-start text-left h-auto"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex flex-wrap gap-1 py-1">
-                    {selectedCategories.length > 0 ? (
-                      selectedCategories.map((cat) => (
-                        <Badge key={cat} variant="secondary">
-                          {cat}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">
-                        カテゴリを選択
-                      </span>
-                    )}
-                  </div>
-                  <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </div>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-              <Command>
-                <CommandInput placeholder="カテゴリを検索..." />
-                <CommandEmpty>カテゴリが見つかりません。</CommandEmpty>
-                <CommandGroup>
-                  {predefinedCategories.map((cat) => (
-                    <CommandItem
-                      key={cat}
-                      onSelect={() =>
-                        setSelectedCategories((prev) =>
-                          prev.includes(cat)
-                            ? prev.filter((c) => c !== cat)
-                            : [...prev, cat]
-                        )
-                      }
-                    >
-                      <Checkbox
-                        checked={selectedCategories.includes(cat)}
-                        className="mr-2"
-                      />
-                      {cat}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <CategorySelector
+            selectedCategories={selectedCategories}
+            onCategoryChange={setSelectedCategories}
+          />
         </div>
         {/* 詳細カテゴリ入力フィールド */}
         <div className="space-y-2">
