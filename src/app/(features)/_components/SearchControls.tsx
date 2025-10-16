@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SlidersHorizontal, Tag } from "lucide-react";
-import { categories as predefinedCategories } from "@/config/categories";
+import { googleTypeToJapaneseMap } from "@/lib/googleMapsTypes";
 import {
   Popover,
   PopoverContent,
@@ -43,6 +43,11 @@ const sortOptions = [
   { value: "created_at.asc", label: "古い順" },
   { value: "likes.desc", label: "いいね順" },
 ];
+
+const categoryOptions = Object.entries(googleTypeToJapaneseMap).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 import { SearchFilters } from "../_lib/types";
 
@@ -185,7 +190,11 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
         if (response.ok && data.latitude && data.longitude) {
           finalLat = data.latitude;
           finalLng = data.longitude;
-          finalRadius = finalRadius === null ? 2000 : finalRadius; // Default radius if not set
+          finalRadius = finalRadius === null ? 2000.0 : finalRadius;
+          // Ensure finalRadius is always a float, even if it was an integer
+          if (typeof finalRadius === 'number' && finalRadius % 1 === 0) {
+            finalRadius = finalRadius + 0.0;
+          }
         } else {
           setGeocodingError(data.message || "場所の検索に失敗しました。");
           setGeocodingLoading(false);
@@ -199,7 +208,6 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
       }
     }
 
-    setGeocodingLoading(false);
     onSearch({
       keyword: localKeyword,
       search_lat: finalLat,
@@ -339,21 +347,21 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
                     <CommandList className="max-h-52 overflow-y-auto">
                       <CommandEmpty>カテゴリが見つかりません。</CommandEmpty>
                       <CommandGroup>
-                        {predefinedCategories.map((category) => (
+                        {categoryOptions.map((option) => (
                           <CommandItem
-                            key={category}
+                            key={option.value}
                             onSelect={() => {
                               handleCategoryChange(
-                                category,
-                                !localCategories.includes(category)
+                                option.label,
+                                !localCategories.includes(option.label)
                               );
                             }}
                           >
                             <Checkbox
-                              checked={localCategories.includes(category)}
+                              checked={localCategories.includes(option.label)}
                               className="mr-2"
                             />
-                            {category}
+                            {option.label}
                           </CommandItem>
                         ))}
                       </CommandGroup>

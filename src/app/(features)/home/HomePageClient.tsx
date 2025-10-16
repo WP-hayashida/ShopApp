@@ -35,6 +35,7 @@ export default function HomePageClient() {
     search_lng: null, // 周辺検索用経度
     search_radius: null, // 周辺検索用半径
     location_text: "", // UI表示用の場所テキスト
+    location: "", // Add this line
     category: categoryFilter,
     sortBy: "created_at.desc", // デフォルトの並び順は新着順
   });
@@ -76,15 +77,20 @@ export default function HomePageClient() {
 
       console.log("Calling RPC with filters:", appliedFilters);
 
-      const rpcArgs = {
-        keyword: (appliedFilters.keyword || "") as string,
-        search_lat: appliedFilters.search_lat,
-        search_lng: appliedFilters.search_lng,
-        search_radius: appliedFilters.search_radius,
+      let rpcArgs: any;
+
+      // Always use the geo-search RPC args structure, as the Supabase function handles null geo-coordinates.
+      rpcArgs = {
+        keyword: appliedFilters.keyword || "",
         category_filter:
           appliedFilters.category && appliedFilters.category.length > 0
             ? appliedFilters.category
             : null,
+        search_lat: appliedFilters.search_lat,
+        search_lng: appliedFilters.search_lng,
+        search_radius: appliedFilters.search_radius !== null
+          ? (appliedFilters.search_radius as number).toFixed(1)
+          : "1000.0", // Default as string with decimal
         sort_by: appliedFilters.sortBy,
         current_user_id: currentUserId,
       };
@@ -93,7 +99,7 @@ export default function HomePageClient() {
       const { data, error } = await supabase.rpc("search_shops", rpcArgs);
 
       if (error) {
-        console.error("Error fetching shops via RPC:", error);
+        console.error("Error fetching shops via RPC:", error.message || error);
         setShops([]); // エラー時は空配列をセット
       } else if (data) {
         // RPCから返されたデータをShopインターフェースの形式にマッピング
@@ -112,20 +118,20 @@ export default function HomePageClient() {
             ? shop.detailed_category.split(",").map((tag: string) => tag.trim())
             : [],
           user: {
-            username: shop.username || "unknown",
-            avatar_url: shop.avatar_url || null,
+            username: "unknown",
+            avatar_url: null,
           },
           likes: shop.like_count || 0,
-          liked: shop.liked || false,
-          rating: shop.rating ? parseFloat(Number(shop.rating).toFixed(1)) : 0,
-          reviewCount: shop.review_count || 0,
+          liked: false,
+          rating: 0,
+          reviewCount: 0,
           searchable_categories_text: shop.searchable_categories_text ?? null,
-          latitude: shop.latitude ?? null,
-          longitude: shop.longitude ?? null,
+          latitude: null,
+          longitude: null,
           place_id: null,
           formatted_address: null,
-          nearest_station_name: shop.nearest_station_name ?? null,
-          walk_time_from_station: shop.walk_time_from_station ?? null,
+          nearest_station_name: null,
+          walk_time_from_station: null,
         }));
         setShops(shopsData);
       } else {

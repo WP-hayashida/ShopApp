@@ -1,3 +1,13 @@
+import { Json } from "@/lib/database.types";
+
+/**
+ * 構造化された営業時間を表すインターフェース
+ */
+export interface BusinessHours {
+  day: string;
+  time: string;
+}
+
 /**
  * ユーザー情報を表すインターフェース
  */
@@ -28,6 +38,10 @@ export interface Shop {
   user: User; // 投稿ユーザー情報
   liked: boolean; // 現在のユーザーがいいねしているか
   price_range?: string; // 価格帯を追加
+  business_hours_weekly?: Json | null; // 週ごとの営業時間
+  phone_number?: string; // 電話番号
+  photo_url_api?: string; // APIから取得した写真のURL
+  api_last_updated?: string; // API最終更新日時
   // --- Google Maps Platform 関連の追加フィールド ---
   latitude: number | null;
   longitude: number | null;
@@ -63,7 +77,8 @@ export interface ShopPayload {
   name: string;
   photo_url: string | null;
   url: string | null;
-  business_hours: string | null;
+  business_hours_weekly?: Json | null; // 週ごとの営業時間
+  rating?: number | null; // 評価
   location: string | null;
   category: string[] | null; // Supabaseでは配列
   detailed_category: string | null;
