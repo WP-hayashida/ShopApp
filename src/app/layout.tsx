@@ -1,5 +1,4 @@
-'use client'; // Add use client directive
-
+"use client"; // Add use client directive
 
 import { APIProvider } from "@vis.gl/react-google-maps";
 
@@ -34,7 +33,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string} libraries={['places', 'geocoding', 'routes']}>
+        <APIProvider
+          apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string}
+          libraries={["places", "geocoding", "routes"]}
+        >
           <SearchProvider>
             <Header />
             <main>{children}</main>

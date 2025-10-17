@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -18,9 +18,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Star } from "lucide-react";
 import Image from "next/image";
-import { ShopFormInput, ShopPayload } from "../../../_lib/types"; // Import new types
+
 import type { Json } from "@/lib/database.types";
-import { transformFormInputToShopPayload } from "../../../_lib/shopUtils"; // Import helper function
+
+
+
+// Define a type for the structured business hours
+
+interface BusinessHours {
+
+  day: string;
+
+  time: string;
+
+}
+
+
 
 // 定数：都道府県リスト
 const prefectures = [
@@ -113,9 +126,8 @@ export default function EditShopPage() {
   const [category, setCategory] = useState("");
   const [detailedCategory, setDetailedCategory] = useState("");
   const [comments, setComments] = useState("");
-  const [businessHours, setBusinessHours] = useState<any[] | null>(null); // Changed to any[] for now
+  const [businessHours, setBusinessHours] = useState<BusinessHours[] | null>(null);
   const [rating, setRating] = useState<number | null>(null);
-
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +167,7 @@ export default function EditShopPage() {
       setDetailedCategory(shopData.detailed_category ?? "");
       setComments(shopData.comments ?? "");
       setInitialPhotoUrl(shopData.photo_url);
-      setBusinessHours(shopData.business_hours_weekly as any[] | null);
+      setBusinessHours(shopData.business_hours_weekly as BusinessHours[] | null);
       setRating(shopData.rating ?? null);
 
       setLoadingUser(false);
@@ -350,7 +362,9 @@ export default function EditShopPage() {
           <Input
             id="photo"
             type="file"
-            onChange={(e) => setPhoto(e.target.files ? e.target.files[0] : null)}
+            onChange={(e) =>
+              setPhoto(e.target.files ? e.target.files[0] : null)
+            }
             accept="image/*"
           />
         </div>

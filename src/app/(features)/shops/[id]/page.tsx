@@ -5,7 +5,33 @@ import { StoreDetail } from "@/components/StoreDetail";
 import { createClient } from "@/lib/supabase/client";
 import { Shop } from "../../_lib/types";
 import { useParams, useRouter } from "next/navigation";
-import { SupabaseClient } from "@supabase/supabase-js"; // Import SupabaseClient type
+import { SupabaseClient, User } from "@supabase/supabase-js"; // Import SupabaseClient type
+import { Database } from "@/lib/database.types";
+
+interface BusinessHours {
+  day: string;
+  time: string;
+}
+
+type ShopTableRow = Database["public"]["Tables"]["shops"]["Row"];
+
+interface InitialShopData extends ShopTableRow {
+  likes: { user_id: string }[];
+  ratings: { rating: number | null }[];
+  reviews: { id: string }[];
+}
+
+interface EnrichedShopData {
+  place_id: string | null;
+  name: string;
+  price_range?: string | null;
+  business_hours_weekly?: BusinessHours[] | null;
+  rating?: number | null;
+  phone_number?: string | null;
+  photo_url_api?: string | null;
+  api_last_updated: string | null;
+  types?: string[] | null;
+}
 
 export default function ShopDetailPage() {
   // useParamsフックを使ってURLパラメータを取得
@@ -21,7 +47,7 @@ export default function ShopDetailPage() {
 
   // Initialize Supabase client
   useEffect(() => {
-    const initSupabase = async () => {
+    const initSupabase = () => {
       const client = createClient();
       setSupabase(client);
     };
@@ -112,7 +138,7 @@ export default function ShopDetailPage() {
       setCurrentUserId(currentUserId || null); // Update the state here
 
       // First, fetch basic shop data from Supabase to get place_id
-      const { data: initialShopData, error: initialShopError } = await supabase
+      const { data, error: initialShopError } = await supabase
         .from("shops")
         .select(
           `
@@ -124,6 +150,8 @@ export default function ShopDetailPage() {
         )
         .eq("id", shopId)
         .single();
+
+      const initialShopData = data as InitialShopData | null;
 
       if (initialShopError) {
         console.error("Error fetching initial shop data:", initialShopError);
@@ -138,7 +166,7 @@ export default function ShopDetailPage() {
       }
 
       // Now, fetch enriched data from our /api/placedetails route using place_id
-      let enrichedShopData: any = {};
+      let enrichedShopData: Partial<EnrichedShopData> = {};
       try {
         const apiResponse = await fetch(
           `/api/placedetails?place_id=${initialShopData.place_id}`
@@ -231,7 +259,7 @@ export default function ShopDetailPage() {
           walk_time_from_station: mergedShopData.walk_time_from_station ?? null,
           // New fields from API
           price_range: mergedShopData.price_range,
-          business_hours_weekly: mergedShopData.business_hours_weekly,
+          business_hours_weekly: mergedShopData.business_hours_weekly as unknown as BusinessHours[] | null,
           phone_number: mergedShopData.phone_number,
           photo_url_api: mergedShopData.photo_url_api,
           api_last_updated: mergedShopData.api_last_updated,

@@ -9,25 +9,13 @@ import { ShopPayload } from "../_lib/types";
 import type { Json } from "@/lib/database.types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tag, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "cmdk";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@radix-ui/react-popover";
+import { Command, CommandEmpty, CommandItem, CommandList } from "cmdk";
+
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { APIProvider } from "@vis.gl/react-google-maps";
-import { categories as predefinedCategories } from "@/config/categories";
 
 import { googleTypeToJapaneseMap } from "@/lib/googleMapsTypes";
 
@@ -60,7 +48,7 @@ function ShopNewForm({ user }: { user: User }) {
   const [photo, setPhoto] = useState<File | null>(null); // 投稿する写真ファイル
   const [url, setUrl] = useState(""); // 店舗のウェブサイトURL
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 選択されたカテゴリ
-  const [autocompletePopoverOpen, setAutocompletePopoverOpen] = useState(false); // オートコンプリートポップオーバーの開閉状態
+
   const [detailedCategory, setDetailedCategory] = useState(""); // 詳細カテゴリ
   const [comments, setComments] = useState(""); // コメント
   const [placeId, setPlaceId] = useState<string | null>(null); // Google Places Place ID
@@ -79,7 +67,6 @@ function ShopNewForm({ user }: { user: User }) {
   useEffect(() => {
     if (name.length < 2) {
       setSuggestions([]);
-      setAutocompletePopoverOpen(false); // Popoverを閉じる
       return;
     }
 
@@ -94,14 +81,11 @@ function ShopNewForm({ user }: { user: User }) {
 
         if (data.predictions && data.predictions.length > 0) {
           setSuggestions(data.predictions);
-          setAutocompletePopoverOpen(true); // Popoverを開く
         } else {
           setSuggestions([]);
-          setAutocompletePopoverOpen(false); // Popoverを閉じる
         }
       } catch (err) {
         console.error("Autocomplete fetch error:", err);
-        setAutocompletePopoverOpen(false); // エラー時もPopoverを閉じる
       }
     }, 500);
 
@@ -116,7 +100,6 @@ function ShopNewForm({ user }: { user: User }) {
     setName(suggestion.structured_formatting.main_text);
     setAddressInput(suggestion.structured_formatting.secondary_text);
     setSuggestions([]);
-    setAutocompletePopoverOpen(false);
     setPlaceId(suggestion.place_id); // Store place_id
 
     console.log(`Fetching details for placeId: "${suggestion.place_id}"`);

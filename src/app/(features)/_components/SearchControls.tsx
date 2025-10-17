@@ -44,10 +44,12 @@ const sortOptions = [
   { value: "likes.desc", label: "いいね順" },
 ];
 
-const categoryOptions = Object.entries(googleTypeToJapaneseMap).map(([value, label]) => ({
-  value,
-  label,
-}));
+const categoryOptions = Object.entries(googleTypeToJapaneseMap).map(
+  ([value, label]) => ({
+    value,
+    label,
+  })
+);
 
 import { SearchFilters } from "../_lib/types";
 
@@ -192,7 +194,7 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
           finalLng = data.longitude;
           finalRadius = finalRadius === null ? 2000.0 : finalRadius;
           // Ensure finalRadius is always a float, even if it was an integer
-          if (typeof finalRadius === 'number' && finalRadius % 1 === 0) {
+          if (typeof finalRadius === "number" && finalRadius % 1 === 0) {
             finalRadius = finalRadius + 0.0;
           }
         } else {

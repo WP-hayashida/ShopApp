@@ -44,9 +44,6 @@ interface StoreCardProps {
 }
 
 export function StoreCard({ store, onLike }: StoreCardProps) {
-
-
-
   return (
     <Card className="overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group">
       <CardContent className="p-0">
@@ -70,8 +67,12 @@ export function StoreCard({ store, onLike }: StoreCardProps) {
                   key={index}
                   className={`${catConfig.bgColor} backdrop-blur-sm px-2 py-1 border ${catConfig.borderColor}`}
                 >
-                  <CatIconComponent className={`size-3 ${catConfig.textColor}`} />
-                  <span className={`text-xs font-medium ${catConfig.textColor} ml-1`}>
+                  <CatIconComponent
+                    className={`size-3 ${catConfig.textColor}`}
+                  />
+                  <span
+                    className={`text-xs font-medium ${catConfig.textColor} ml-1`}
+                  >
                     {cat}
                   </span>
                 </Badge>

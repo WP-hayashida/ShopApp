@@ -84,9 +84,9 @@ export function StoreDetail({
     : [];
 
   const todayHours = getTodayHours(weeklyHoursArray);
-  const { status: todayStatus, color: todayColor } = todayHours
+  const { color: todayColor } = todayHours
     ? getStatusAndColor(todayHours.time) // Use todayHours.time
-    : { status: "不明", color: "text-muted-foreground" };
+    : { color: "text-muted-foreground" };
 
   const [comment, setComment] = useState("");
   const [comments] = useState([
@@ -226,7 +226,9 @@ export function StoreDetail({
             {/* 店舗名とバッジをここに配置 */}
             <div>
               <h1 className="text-3xl font-bold mb-2">{store.name}</h1>
-              <div className="flex flex-wrap gap-1 items-center"> {/* Added items-center */}
+              <div className="flex flex-wrap gap-1 items-center">
+                {" "}
+                {/* Added items-center */}
                 {store.category.map((cat, index) => {
                   const catConfig = getCategoryConfig(cat);
                   const CatIconComponent = catConfig.icon;
@@ -253,9 +255,7 @@ export function StoreDetail({
                     size="sm"
                     className="flex items-center gap-1 ml-auto" // Added ml-auto here
                   >
-                    <Train
-                      size={16}
-                    />
+                    <Train size={16} />
                     {walkingInfo.loading ? (
                       <span className="text-xs">検索中...</span>
                     ) : walkingInfo.walkTime ? (
@@ -327,7 +327,10 @@ export function StoreDetail({
                           fill="currentColor"
                           className="text-yellow-500"
                         />
-                        <span className="font-medium">{store.rating?.toFixed(1) ?? 'N/A'}</span> {/* Use store.rating */}
+                        <span className="font-medium">
+                          {store.rating?.toFixed(1) ?? "N/A"}
+                        </span>{" "}
+                        {/* Use store.rating */}
                       </div>
                       <span className="text-muted-foreground">
                         ({store.reviewCount}件のレビュー)
@@ -339,14 +342,8 @@ export function StoreDetail({
                           rel="noopener noreferrer"
                           className="ml-auto" // Added ml-auto here
                         >
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                          >
-                            <MapPin
-                              size={16}
-                              className="mr-1"
-                            />
+                          <Button variant="secondary" size="sm">
+                            <MapPin size={16} className="mr-1" />
                             MAP
                           </Button>{" "}
                         </a>
@@ -376,14 +373,21 @@ export function StoreDetail({
                               営業時間不明
                             </div>
                           )}
-                          <Accordion type="single" collapsible className="w-full">
+                          <Accordion
+                            type="single"
+                            collapsible
+                            className="w-full"
+                          >
                             <AccordionItem value="item-1">
                               <AccordionTrigger className="py-1 text-sm text-muted-foreground hover:no-underline">
                                 今週の営業時間を見る
                               </AccordionTrigger>
                               <AccordionContent>
                                 {weeklyHoursArray.map((item, index) => (
-                                  <div key={index} className="flex justify-between text-sm py-0.5">
+                                  <div
+                                    key={index}
+                                    className="flex justify-between text-sm py-0.5"
+                                  >
                                     <span>{item.day}</span>
                                     <span className="text-muted-foreground">
                                       {item.time}
@@ -394,19 +398,22 @@ export function StoreDetail({
                             </AccordionItem>
                           </Accordion>
                         </div>
-                      </div> {/* Corrected closing tag */}
+                      </div>{" "}
+                      {/* Corrected closing tag */}
                       {/* 電話番号 */}
                       {store.phone_number && (
                         <div className="flex items-center gap-2">
                           <Phone size={16} />
-                          <span>{store.phone_number}</span> {/* Use store.phone_number */}
+                          <span>{store.phone_number}</span>{" "}
+                          {/* Use store.phone_number */}
                         </div>
                       )}
                       {/* 価格帯 */}
                       {store.price_range && (
                         <div className="flex items-center gap-2">
                           <BadgeJapaneseYen size={16} />
-                          <span>{store.price_range}</span> {/* Use store.price_range */}
+                          <span>{store.price_range}</span>{" "}
+                          {/* Use store.price_range */}
                         </div>
                       )}
                     </div>
@@ -426,8 +433,7 @@ export function StoreDetail({
 
                   <Separator />
 
-                  <div className="flex items-center gap-2 mt-4">
-                  </div>
+                  <div className="flex items-center gap-2 mt-4"></div>
                 </div>
               </CardContent>
             </Card>

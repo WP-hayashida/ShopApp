@@ -74,7 +74,8 @@ export async function GET(request: Request) {
         place_id: suggestion.placePrediction.placeId,
         structured_formatting: {
           main_text: suggestion.placePrediction.structuredFormat.mainText.text,
-          secondary_text: suggestion.placePrediction.structuredFormat.secondaryText.text,
+          secondary_text:
+            suggestion.placePrediction.structuredFormat.secondaryText.text,
         },
       })) || [];
 

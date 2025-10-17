@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SearchFilters, Shop } from "../_lib/types";
+import { SearchFilters, Shop, ShopSearchRpcArgs } from "../_lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useSearch } from "@/context/SearchContext";
@@ -9,7 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 import FilterableShopList from "../_components/FilterableShopList";
 import { Database } from "@/lib/database.types";
 
-type RpcShopReturn = Database['public']['Functions']['search_shops']['Returns'][number];
+type RpcShopReturn =
+  Database["public"]["Functions"]["search_shops"]["Returns"][number];
 
 /**
  * ホームページのクライアントサイドコンポーネント
@@ -53,8 +54,8 @@ export default function HomePageClient() {
 
   // Supabaseクライアントの初期化
   useEffect(() => {
-    const initSupabase = async () => {
-      const client = await createClient(); // awaitを追加
+    const initSupabase = () => {
+      const client = createClient();
       setSupabase(client);
     };
     initSupabase();
@@ -77,21 +78,17 @@ export default function HomePageClient() {
 
       console.log("Calling RPC with filters:", appliedFilters);
 
-      let rpcArgs: any;
-
       // Always use the geo-search RPC args structure, as the Supabase function handles null geo-coordinates.
-      rpcArgs = {
+      const rpcArgs: ShopSearchRpcArgs = {
         keyword: appliedFilters.keyword || "",
         category_filter:
           appliedFilters.category && appliedFilters.category.length > 0
             ? appliedFilters.category
             : null,
-        search_lat: appliedFilters.search_lat,
-        search_lng: appliedFilters.search_lng,
-        search_radius: appliedFilters.search_radius !== null
-          ? (appliedFilters.search_radius as number).toFixed(1)
-          : "1000.0", // Default as string with decimal
-        sort_by: appliedFilters.sortBy,
+        search_lat: appliedFilters.search_lat ?? null,
+        search_lng: appliedFilters.search_lng ?? null,
+        search_radius: appliedFilters.search_radius ?? 1000.0,
+        sort_by: appliedFilters.sortBy ?? "created_at.desc",
         current_user_id: currentUserId,
       };
 
@@ -107,31 +104,38 @@ export default function HomePageClient() {
         const shopsData = data.map((shop: RpcShopReturn) => ({
           id: shop.id,
           name: shop.name,
-          imageUrl: shop.photo_url || "/next.svg",
+          imageUrl: shop.photo_url_api || shop.photo_url || "/next.svg",
           url: shop.url || "",
           hours: shop.business_hours || "N/A",
           location: shop.location || "",
           category: shop.category || [],
           detailed_category: shop.detailed_category || "",
           description: shop.comments || "説明がありません。",
+          comments: shop.comments,
           tags: shop.detailed_category
             ? shop.detailed_category.split(",").map((tag: string) => tag.trim())
             : [],
           user: {
-            username: "unknown",
-            avatar_url: null,
+            username: shop.username || "unknown",
+            avatar_url: shop.avatar_url || null,
           },
           likes: shop.like_count || 0,
-          liked: false,
-          rating: 0,
-          reviewCount: 0,
+          liked: shop.liked || false,
+          rating: shop.rating || 0,
+          reviewCount: 0, // This is not in RpcShopReturn
           searchable_categories_text: shop.searchable_categories_text ?? null,
-          latitude: null,
-          longitude: null,
-          place_id: null,
-          formatted_address: null,
-          nearest_station_name: null,
-          walk_time_from_station: null,
+          latitude: shop.latitude ?? null,
+          longitude: shop.longitude ?? null,
+          place_id: shop.place_id ?? null,
+          formatted_address: shop.formatted_address ?? null,
+          nearest_station_name: shop.nearest_station_name ?? null,
+          nearest_station_place_id: shop.nearest_station_place_id ?? null,
+          walk_time_from_station: shop.walk_time_from_station ?? null,
+          price_range: shop.price_range ?? undefined,
+          business_hours_weekly: shop.business_hours_weekly ?? null,
+          phone_number: shop.phone_number ?? undefined,
+          photo_url_api: shop.photo_url_api ?? undefined,
+          api_last_updated: shop.api_last_updated ?? undefined,
         }));
         setShops(shopsData);
       } else {

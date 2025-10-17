@@ -66,7 +66,8 @@ export async function mapSupabaseShopToShop(
     (sum: number, r: { rating: number | null }) => sum + (r.rating || 0),
     0
   );
-  const averageRating = shopRatings.length > 0 ? totalRating / shopRatings.length : 0;
+  const averageRating =
+    shopRatings.length > 0 ? totalRating / shopRatings.length : 0;
 
   return {
     id: rawShop.id,
@@ -84,10 +85,16 @@ export async function mapSupabaseShopToShop(
       : [],
     user: {
       username: ownerUser?.username || "Unknown User",
-      avatar_url: ownerUser?.avatar_url || "https://avatars.githubusercontent.com/u/1?v=4",
+      avatar_url:
+        ownerUser?.avatar_url ||
+        "https://avatars.githubusercontent.com/u/1?v=4",
     },
     likes: shopLikes.length,
-    liked: currentUserId ? shopLikes.some((like: { user_id: string }) => like.user_id === currentUserId) : false,
+    liked: currentUserId
+      ? shopLikes.some(
+          (like: { user_id: string }) => like.user_id === currentUserId
+        )
+      : false,
     rating: parseFloat(averageRating.toFixed(1)),
     reviewCount: shopReviews.length,
     searchable_categories_text: rawShop.searchable_categories_text ?? null,

@@ -246,8 +246,11 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/shops"> {/* Added this item */}
-                          <Store className="mr-2 h-4 w-4" /> {/* Using Store icon for list */}
+                        <Link href="/shops">
+                          {" "}
+                          {/* Added this item */}
+                          <Store className="mr-2 h-4 w-4" />{" "}
+                          {/* Using Store icon for list */}
                           お店一覧
                         </Link>
                       </DropdownMenuItem>
@@ -264,9 +267,13 @@ export function Header() {
                       </DropdownMenuItem>
                     </>
                   ) : (
-                    <> {/* Added fragment for multiple items */}
+                    <>
+                      {" "}
+                      {/* Added fragment for multiple items */}
                       <DropdownMenuItem asChild>
-                        <Link href="/shops"> {/* Added this item for logged out users */}
+                        <Link href="/shops">
+                          {" "}
+                          {/* Added this item for logged out users */}
                           <Store className="mr-2 h-4 w-4" />
                           お店一覧
                         </Link>
