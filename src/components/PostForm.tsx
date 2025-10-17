@@ -132,16 +132,17 @@ export function PostForm({ onNavigate }: PostFormProps) {
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex flex-wrap gap-1 py-1">
-                          {formData.categories.length > 0
-                            ? formData.categories.map((cat) => (
-                                <Badge
-                                  key={cat}
-                                  variant="secondary"
-                                >
-                                  {cat}
-                                </Badge>
-                              ))
-                            : <span className="text-muted-foreground">カテゴリーを選択してください</span>}
+                          {formData.categories.length > 0 ? (
+                            formData.categories.map((cat) => (
+                              <Badge key={cat} variant="secondary">
+                                {cat}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground">
+                              カテゴリーを選択してください
+                            </span>
+                          )}
                         </div>
                         <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </div>

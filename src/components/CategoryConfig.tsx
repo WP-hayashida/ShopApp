@@ -1,5 +1,5 @@
-import { LucideIcon, Coffee, Utensils, ShoppingBag, Home } from 'lucide-react';
-import { categories } from '@/config/categories';
+import { LucideIcon, Coffee, Utensils, ShoppingBag, Home } from "lucide-react";
+import { categories } from "@/config/categories";
 
 interface CategoryConfig {
   icon: LucideIcon;
@@ -9,19 +9,19 @@ interface CategoryConfig {
 }
 
 const baseCategoryMap: Record<string, CategoryConfig> = {
-  "カフェ": {
+  カフェ: {
     icon: Coffee,
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
     textColor: "text-blue-700",
   },
-  "レストラン": {
+  レストラン: {
     icon: Utensils,
     bgColor: "bg-green-50",
     borderColor: "border-green-200",
     textColor: "text-green-700",
   },
-  "ショッピング": {
+  ショッピング: {
     icon: ShoppingBag,
     bgColor: "bg-purple-50",
     borderColor: "border-purple-200",
@@ -37,10 +37,13 @@ const defaultCategoryConfig: CategoryConfig = {
   textColor: "text-gray-700",
 };
 
-const categoryMap: Record<string, CategoryConfig> = categories.reduce((acc, category) => {
-  acc[category] = baseCategoryMap[category] || defaultCategoryConfig;
-  return acc;
-}, {} as Record<string, CategoryConfig>);
+const categoryMap: Record<string, CategoryConfig> = categories.reduce(
+  (acc, category) => {
+    acc[category] = baseCategoryMap[category] || defaultCategoryConfig;
+    return acc;
+  },
+  {} as Record<string, CategoryConfig>
+);
 
 export function getCategoryConfig(category: string): CategoryConfig {
   return categoryMap[category] || defaultCategoryConfig;

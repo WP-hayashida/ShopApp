@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -16,9 +16,24 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Star } from "lucide-react";
 import Image from "next/image";
-import { ShopFormInput, ShopPayload } from "../../../_lib/types"; // Import new types
-import { transformFormInputToShopPayload } from "../../../_lib/shopUtils"; // Import helper function
+
+import type { Json } from "@/lib/database.types";
+
+
+
+// Define a type for the structured business hours
+
+interface BusinessHours {
+
+  day: string;
+
+  time: string;
+
+}
+
+
 
 // 定数：都道府県リスト
 const prefectures = [
@@ -103,50 +118,19 @@ export default function EditShopPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [initialPhotoUrl, setInitialPhotoUrl] = useState<string | null>(null);
 
-  // フォームの各フィールドのステートをShopFormInput型で一元管理
-  const [formData, setFormData] = useState<ShopFormInput>({
-    name: "",
-    photo: null,
-    url: "",
-    startTime: "",
-    endTime: "",
-    location: prefectures[12], // デフォルトは東京
-    category: "",
-    detailedCategory: "",
-    comments: "",
-    address: "", // 追加
-    nearestStationInput: "", // 追加
-  });
+  // Individual state for each form field
+  const [name, setName] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [url, setUrl] = useState("");
+  const [location, setLocation] = useState(prefectures[12]);
+  const [category, setCategory] = useState("");
+  const [detailedCategory, setDetailedCategory] = useState("");
+  const [comments, setComments] = useState("");
+  const [businessHours, setBusinessHours] = useState<BusinessHours[] | null>(null);
+  const [rating, setRating] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // フォーム入力変更ハンドラ
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  // Selectコンポーネント用の変更ハンドラ
-  const handleSelectChange = (id: keyof ShopFormInput, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  // ファイル入力変更ハンドラ
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      photo: e.target.files ? e.target.files[0] : null,
-    }));
-  };
 
   // 副作用フック：ユーザーと既存の店舗情報を取得してフォームに設定
   useEffect(() => {
@@ -176,22 +160,15 @@ export default function EditShopPage() {
       }
 
       // フォームに既存のデータを設定
-      const [start, end] = shopData.business_hours?.split(" - ") || ["", ""];
-
-      setFormData({
-        name: shopData.name ?? "",
-        photo: null, // 既存の写真はphotoUrlで管理
-        url: shopData.url ?? "",
-        startTime: start,
-        endTime: end,
-        location: shopData.location ?? prefectures[12],
-        category: shopData.category?.[0] ?? "", // 配列の最初の要素を設定
-        detailedCategory: shopData.detailed_category ?? "",
-        comments: shopData.comments ?? "",
-        address: "",
-        nearestStationInput: "",
-      });
+      setName(shopData.name ?? "");
+      setUrl(shopData.url ?? "");
+      setLocation(shopData.location ?? prefectures[12]);
+      setCategory(shopData.category?.[0] ?? "");
+      setDetailedCategory(shopData.detailed_category ?? "");
+      setComments(shopData.comments ?? "");
       setInitialPhotoUrl(shopData.photo_url);
+      setBusinessHours(shopData.business_hours_weekly as BusinessHours[] | null);
+      setRating(shopData.rating ?? null);
 
       setLoadingUser(false);
     };
@@ -228,15 +205,15 @@ export default function EditShopPage() {
     setError(null);
 
     try {
-      let photoUrl: string | null = initialPhotoUrl;
+      let updatedPhotoUrl: string | null = initialPhotoUrl;
 
       // 新しい写真が選択された場合、アップロード処理を行う
-      if (formData.photo) {
-        const fileExt = formData.photo.name.split(".").pop();
+      if (photo) {
+        const fileExt = photo.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("shop-photos")
-          .upload(fileName, formData.photo);
+          .upload(fileName, photo);
 
         if (uploadError) {
           throw new Error(
@@ -247,25 +224,33 @@ export default function EditShopPage() {
         const { data: publicUrlData } = supabase.storage
           .from("shop-photos")
           .getPublicUrl(uploadData.path);
-        photoUrl = publicUrlData.publicUrl;
+        updatedPhotoUrl = publicUrlData.publicUrl;
       }
 
-      // フォームデータをSupabaseペイロードに変換
-      const shopPayload: ShopPayload = transformFormInputToShopPayload(
-        formData,
-        photoUrl
-      );
+      // Supabaseに送信するデータを作成
+      const updatePayload = {
+        name,
+        photo_url: updatedPhotoUrl,
+        url: url || null,
+        location: location || null,
+        category: category ? [category] : null,
+        detailed_category: detailedCategory || null,
+        comments: comments || null,
+        business_hours_weekly: businessHours as unknown as Json,
+        rating: rating,
+      };
 
       // `shops`テーブルのデータを更新
       const { error: updateError } = await supabase
         .from("shops")
-        .update(shopPayload)
+        .update(updatePayload)
         .eq("id", shopId);
 
       if (updateError) {
         throw new Error(`投稿の更新に失敗しました: ${updateError.message}`);
       }
       alert("投稿が正常に更新されました。");
+      router.push("/my-page");
     } catch (err) {
       let message = "投稿の更新中にエラーが発生しました。";
       if (err instanceof Error) {
@@ -355,8 +340,8 @@ export default function EditShopPage() {
           <Label htmlFor="name">店舗名</Label>
           <Input
             id="name"
-            value={formData.name}
-            onChange={handleInputChange}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="例: Geminiカフェ"
             required
           />
@@ -364,7 +349,7 @@ export default function EditShopPage() {
         {/* 写真 */}
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
-          {initialPhotoUrl && !formData.photo && (
+          {initialPhotoUrl && !photo && (
             <div className="relative w-32 h-32 mb-2">
               <Image
                 src={initialPhotoUrl}
@@ -377,46 +362,63 @@ export default function EditShopPage() {
           <Input
             id="photo"
             type="file"
-            onChange={handleFileChange}
+            onChange={(e) =>
+              setPhoto(e.target.files ? e.target.files[0] : null)
+            }
             accept="image/*"
           />
         </div>
+
+        {/* Rating Display */}
+        {rating && (
+          <div className="space-y-2">
+            <Label htmlFor="rating">評価</Label>
+            <div className="flex items-center gap-2">
+              <Star className="text-yellow-400 fill-yellow-400" size={20} />
+              <span className="font-bold text-lg">{rating}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Business Hours Display */}
+        <div className="space-y-2">
+          <Label>営業時間</Label>
+          {businessHours && businessHours.length > 0 ? (
+            <div className="p-4 border rounded-md bg-muted/50 text-sm">
+              <ul>
+                {businessHours.map((item, index) => (
+                  <li key={index} className="flex justify-between">
+                    <span>{item.day}</span>
+                    <span>{item.time}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md">
+              営業時間のデータがありません。
+            </div>
+          )}
+        </div>
+
         {/* URL */}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <Input
             id="url"
             type="url"
-            value={formData.url}
-            onChange={handleInputChange}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
           />
         </div>
-        {/* 営業時間 */}
-        <div className="space-y-2">
-          <Label>営業時間</Label>
-          <div className="flex items-center space-x-2">
-            <Input
-              type="time"
-              id="startTime"
-              value={formData.startTime}
-              onChange={handleInputChange}
-            />
-            <span>-</span>
-            <Input
-              type="time"
-              id="endTime"
-              value={formData.endTime}
-              onChange={handleInputChange}
-            />
-          </div>
-        </div>
+
         {/* 場所 */}
         <div className="space-y-2">
           <Label htmlFor="location">場所</Label>
           <Select
-            onValueChange={(value) => handleSelectChange("location", value)}
-            value={formData.location}
+            onValueChange={(value) => setLocation(value)}
+            value={location}
           >
             <SelectTrigger id="location">
               <SelectValue placeholder="都道府県を選択" />
@@ -434,8 +436,8 @@ export default function EditShopPage() {
         <div className="space-y-2">
           <Label htmlFor="category">カテゴリ</Label>
           <Select
-            onValueChange={(value) => handleSelectChange("category", value)}
-            value={formData.category}
+            onValueChange={(value) => setCategory(value)}
+            value={category}
           >
             <SelectTrigger id="category">
               <SelectValue placeholder="カテゴリを選択" />
@@ -454,8 +456,8 @@ export default function EditShopPage() {
           <Label htmlFor="detailedCategory">詳細カテゴリ</Label>
           <Input
             id="detailedCategory"
-            value={formData.detailedCategory}
-            onChange={handleInputChange}
+            value={detailedCategory}
+            onChange={(e) => setDetailedCategory(e.target.value)}
             placeholder="例: スペシャルティコーヒー"
           />
         </div>
@@ -464,8 +466,8 @@ export default function EditShopPage() {
           <Label htmlFor="comments">コメント</Label>
           <Textarea
             id="comments"
-            value={formData.comments}
-            onChange={handleInputChange}
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
             placeholder="お店の雰囲気やおすすめメニューなどを記入してください"
           />
         </div>

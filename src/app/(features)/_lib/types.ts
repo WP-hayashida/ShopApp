@@ -1,3 +1,13 @@
+import { Json } from "@/lib/database.types";
+
+/**
+ * 構造化された営業時間を表すインターフェース
+ */
+export interface BusinessHours {
+  day: string;
+  time: string;
+}
+
 /**
  * ユーザー情報を表すインターフェース
  */
@@ -27,7 +37,11 @@ export interface Shop {
   tags: string[]; // タグ
   user: User; // 投稿ユーザー情報
   liked: boolean; // 現在のユーザーがいいねしているか
-  price_range?: string; // 価格帯を追加
+  price_range?: string | null; // 価格帯を追加
+  business_hours_weekly?: BusinessHours[] | null; // 週ごとの営業時間
+  phone_number?: string | null; // 電話番号
+  photo_url_api?: string | null; // APIから取得した写真のURL
+  api_last_updated?: string | null; // API最終更新日時
   // --- Google Maps Platform 関連の追加フィールド ---
   latitude: number | null;
   longitude: number | null;
@@ -36,6 +50,19 @@ export interface Shop {
   nearest_station_name: string | null;
   nearest_station_place_id: string | null;
   walk_time_from_station: number | null;
+}
+
+/**
+ * RPC関数 `search_shops` の引数の型
+ */
+export interface ShopSearchRpcArgs {
+  keyword: string;
+  category_filter: string[] | null;
+  search_lat: number | null;
+  search_lng: number | null;
+  search_radius: number | null;
+  sort_by: string;
+  current_user_id: string | null;
 }
 
 /**
@@ -63,7 +90,8 @@ export interface ShopPayload {
   name: string;
   photo_url: string | null;
   url: string | null;
-  business_hours: string | null;
+  business_hours_weekly?: Json | null; // 週ごとの営業時間
+  rating?: number | null; // 評価
   location: string | null;
   category: string[] | null; // Supabaseでは配列
   detailed_category: string | null;

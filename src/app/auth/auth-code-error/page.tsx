@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 /**
  * 認証エラーページコンポーネント
@@ -9,10 +9,10 @@ export default function AuthCodeError() {
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>認証エラー</h1>
       <p>セッションの取得に失敗しました。</p>
-      <p>
-        お手数ですが、再度サインインをお試しください。
-      </p>
-      <Link href="/" className="text-blue-600 hover:underline">トップページに戻る</Link>
+      <p>お手数ですが、再度サインインをお試しください。</p>
+      <Link href="/" className="text-blue-600 hover:underline">
+        トップページに戻る
+      </Link>
     </div>
   );
 }

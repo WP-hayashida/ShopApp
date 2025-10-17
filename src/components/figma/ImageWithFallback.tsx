@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useState } from "react";
+import Image from "next/image";
 
 interface ImageWithFallbackProps extends React.ComponentProps<typeof Image> {
   fallbackSrc?: string;
@@ -7,7 +7,7 @@ interface ImageWithFallbackProps extends React.ComponentProps<typeof Image> {
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
-  fallbackSrc = '/next.svg', // Using /next.svg as a temporary fallback
+  fallbackSrc = "/next.svg", // Using /next.svg as a temporary fallback
   alt,
   ...props
 }) => {

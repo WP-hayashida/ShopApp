@@ -4,29 +4,20 @@ import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState, useMemo } from "react";
+import Image from "next/image"; // Added Image import
 import { ShopPayload } from "../_lib/types";
+import type { Json } from "@/lib/database.types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tag } from "lucide-react";
+import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "cmdk";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@radix-ui/react-popover";
+import { Command, CommandEmpty, CommandItem, CommandList } from "cmdk";
+
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { APIProvider } from "@vis.gl/react-google-maps";
-import { categories as predefinedCategories } from "@/config/categories";
-import { CategorySelector } from "../_components/CategorySelector";
+
+import { googleTypeToJapaneseMap } from "@/lib/googleMapsTypes";
 
 /**
  * オートコンプリートの予測結果の型定義
@@ -56,12 +47,16 @@ function ShopNewForm({ user }: { user: User }) {
   const [suggestions, setSuggestions] = useState<AutocompletePrediction[]>([]); // オートコンプリートの候補リスト
   const [photo, setPhoto] = useState<File | null>(null); // 投稿する写真ファイル
   const [url, setUrl] = useState(""); // 店舗のウェブサイトURL
-  const [startTime, setStartTime] = useState(""); // 営業時間（開始）
-  const [endTime, setEndTime] = useState(""); // 営業時間（終了）
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // 選択されたカテゴリ
-  const [autocompletePopoverOpen, setAutocompletePopoverOpen] = useState(false); // オートコンプリートポップオーバーの開閉状態
+
   const [detailedCategory, setDetailedCategory] = useState(""); // 詳細カテゴリ
   const [comments, setComments] = useState(""); // コメント
+  const [placeId, setPlaceId] = useState<string | null>(null); // Google Places Place ID
+  const [autoPhotoUrl, setAutoPhotoUrl] = useState<string | null>(null); // Automatically acquired photo URL
+  const [rating, setRating] = useState<number | null>(null); // Rating from Google Places
+  const [businessHours, setBusinessHours] = useState<
+    { day: string; time: string }[] | null
+  >(null); // Weekly business hours
   const [loading, setLoading] = useState(false); // フォーム送信中のローディング状態
   const [error, setError] = useState<string | null>(null); // エラーメッセージ
 
@@ -72,7 +67,6 @@ function ShopNewForm({ user }: { user: User }) {
   useEffect(() => {
     if (name.length < 2) {
       setSuggestions([]);
-      setAutocompletePopoverOpen(false); // Popoverを閉じる
       return;
     }
 
@@ -87,14 +81,11 @@ function ShopNewForm({ user }: { user: User }) {
 
         if (data.predictions && data.predictions.length > 0) {
           setSuggestions(data.predictions);
-          setAutocompletePopoverOpen(true); // Popoverを開く
         } else {
           setSuggestions([]);
-          setAutocompletePopoverOpen(false); // Popoverを閉じる
         }
       } catch (err) {
         console.error("Autocomplete fetch error:", err);
-        setAutocompletePopoverOpen(false); // エラー時もPopoverを閉じる
       }
     }, 500);
 
@@ -106,35 +97,43 @@ function ShopNewForm({ user }: { user: User }) {
    * 選択された場所の詳細情報をGoogle Places APIから取得し、フォームに反映する
    */
   const handleSuggestionSelect = async (suggestion: AutocompletePrediction) => {
-    // 検索時と保存時のデータを一致させるため、サジェストの文字列を場所(address)として設定
-    setAddressInput(suggestion.description);
+    setName(suggestion.structured_formatting.main_text);
+    setAddressInput(suggestion.structured_formatting.secondary_text);
     setSuggestions([]);
-    setAutocompletePopoverOpen(false); // Popoverを閉じる
+    setPlaceId(suggestion.place_id); // Store place_id
 
-    // 詳細情報（正確な名前、緯度経度）を取得
     console.log(`Fetching details for placeId: "${suggestion.place_id}"`);
     try {
-      // Next.jsのAPIルート経由でGoogle Places API Place Detailsを呼び出す
+      // Call our hybrid API route to get comprehensive details
       const response = await fetch(
-        `/placedetails?placeId=${suggestion.place_id}`
+        `/api/placedetails?place_id=${suggestion.place_id}`
       );
       const data = await response.json();
-      console.log("Received place details:", data);
+      console.log("Received place details from hybrid API:", data);
 
-      if (data.place) {
-        // 店舗名は詳細情報から取得した、より正確なもので上書き
-        setName(
-          data.place.displayName.text || suggestion.description.split(",")[0]
-        );
-        setLatitude(data.place.location?.latitude || null);
-        setLongitude(data.place.location?.longitude || null);
+      if (data) {
+        setName(data.name || suggestion.structured_formatting.main_text);
+        setLatitude(data.latitude || null); // Assuming API returns latitude/longitude
+        setLongitude(data.longitude || null); // Assuming API returns latitude/longitude
+        setAutoPhotoUrl(data.photo_url_api || null); // Set auto-acquired photo URL
+        setRating(data.rating || null); // Set rating
+        setBusinessHours(data.business_hours_weekly || null); // Set business hours
+
+        // Process categories from API (assuming 'types' or similar is returned)
+        if (data.types && Array.isArray(data.types)) {
+          const translatedCategories = data.types.map(
+            (type: string) => googleTypeToJapaneseMap[type] || type // Translate, or use original English if not found
+          );
+          setSelectedCategories(translatedCategories);
+        } else {
+          setSelectedCategories([]); // Set to empty array if no types are returned
+        }
       } else {
-        // 詳細取得に失敗した場合は、サジェストの文字列から店名を推測
-        setName(suggestion.description.split(",")[0]);
+        setName(suggestion.structured_formatting.main_text);
       }
     } catch (err) {
       console.error("Place details fetch error:", err);
-      setName(suggestion.description.split(",")[0]); // エラー時も同様
+      setName(suggestion.structured_formatting.main_text);
     }
   };
 
@@ -147,9 +146,9 @@ function ShopNewForm({ user }: { user: User }) {
     setLoading(true);
     setError(null);
     try {
-      let photoUrl: string | null = null;
-      // 写真が選択されていればSupabase Storageにアップロード
+      let finalPhotoUrl: string | null = null;
       if (photo) {
+        // User uploaded a photo, prioritize it
         const fileExt = photo.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -160,12 +159,12 @@ function ShopNewForm({ user }: { user: User }) {
         const { data: publicUrlData } = supabase.storage
           .from("shop-photos")
           .getPublicUrl(uploadData.path);
-        photoUrl = publicUrlData.publicUrl;
+        finalPhotoUrl = publicUrlData.publicUrl;
+      } else if (autoPhotoUrl) {
+        // No user upload, use auto-acquired photo
+        finalPhotoUrl = autoPhotoUrl;
       }
-      const businessHours =
-        startTime && endTime ? `${startTime} - ${endTime}` : null;
 
-      // 緯度・経度があれば、最寄り駅と徒歩時間を計算するAPIを呼び出す
       let nearestStationName: string | null = null;
       let walkTimeFromStation: number | null = null;
       if (latitude && longitude) {
@@ -188,13 +187,13 @@ function ShopNewForm({ user }: { user: User }) {
         }
       }
 
-      // Supabaseに挿入するデータペイロードの構築
       const shopPayload: ShopPayload = {
         name,
-        photo_url: photoUrl,
+        photo_url: finalPhotoUrl, // Use finalPhotoUrl
         url: url || null,
-        business_hours: businessHours,
-        location: addressInput || null, // 検索と一致させるため、オートコンプリートのdescriptionを保存
+        business_hours_weekly: businessHours as unknown as Json, // Cast to Json for Supabase
+        rating: rating,
+        location: addressInput || null,
         latitude,
         longitude,
         category: selectedCategories.length > 0 ? selectedCategories : null,
@@ -202,15 +201,15 @@ function ShopNewForm({ user }: { user: User }) {
         comments: comments || null,
         nearest_station_name: nearestStationName,
         walk_time_from_station: walkTimeFromStation,
+        place_id: placeId, // Save place_id
       };
-      // Supabaseの'shops'テーブルにデータを挿入
       const { error: insertError } = await supabase
         .from("shops")
         .insert({ ...shopPayload, user_id: user.id });
       if (insertError)
         throw new Error(`投稿の保存に失敗: ${insertError.message}`);
       alert("投稿が完了しました！");
-      router.push("/"); // 投稿完了後、トップページへ遷移
+      router.push("/");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "投稿中にエラーが発生しました。";
@@ -231,24 +230,12 @@ function ShopNewForm({ user }: { user: User }) {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onBlur={() => {
-              // 少し遅延させてから閉じることで、候補のクリックを可能にする
-              setTimeout(() => {
-                setAutocompletePopoverOpen(false);
-              }, 150);
-            }}
-            onFocus={() => {
-              // 入力履歴がある場合、再度フォーカスしたときに候補を表示する
-              if (suggestions.length > 0) {
-                setAutocompletePopoverOpen(true);
-              }
-            }}
             placeholder="例: 大砲ラーメン 本店"
             autoComplete="off"
             required
           />
           {/* オートコンプリート候補表示 */}
-          {autocompletePopoverOpen && suggestions.length > 0 && (
+          {suggestions.length > 0 && (
             <div className="absolute z-50 w-full">
               <Command className="bg-background border rounded-md mt-1 shadow-lg">
                 <CommandList>
@@ -259,15 +246,14 @@ function ShopNewForm({ user }: { user: User }) {
                       onMouseDown={(e) => e.preventDefault()} // onBlurが先に発火するのを防ぐ
                       onSelect={() => handleSuggestionSelect(suggestion)}
                     >
-                      {suggestion.structured_formatting?.main_text ||
-                        suggestion.description}
+                      {suggestion.structured_formatting?.main_text}
                     </CommandItem>
                   ))}
                 </CommandList>
               </Command>
             </div>
           )}{" "}
-        </div>
+        </div>{" "}
         {/* 場所入力フィールド */}
         <div className="space-y-2">
           <Label htmlFor="addressInput">場所</Label>
@@ -279,9 +265,31 @@ function ShopNewForm({ user }: { user: User }) {
             required
           />
         </div>
-        {/* 写真アップロードフィールド */}
+        {/* Rating Display */}
+        {rating && (
+          <div className="space-y-2">
+            <Label htmlFor="rating">評価</Label>
+            <div className="flex items-center gap-2">
+              <Star className="text-yellow-400 fill-yellow-400" size={20} />
+              <span className="font-bold text-lg">{rating}</span>
+            </div>
+          </div>
+        )}
+        {/* Photo Upload */}
         <div className="space-y-2">
           <Label htmlFor="photo">写真</Label>
+          {autoPhotoUrl &&
+            !photo && ( // Display auto-acquired photo if no user photo
+              <div className="relative w-32 h-32 mb-2">
+                <Image
+                  src={autoPhotoUrl}
+                  alt="自動取得された写真"
+                  layout="fill"
+                  objectFit="cover"
+                  className="rounded-md"
+                />
+              </div>
+            )}
           <Input
             id="photo"
             type="file"
@@ -291,7 +299,7 @@ function ShopNewForm({ user }: { user: User }) {
             accept="image/*"
           />
         </div>
-        {/* URL入力フィールド */}
+        {/* URL Input */}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <Input
@@ -302,30 +310,42 @@ function ShopNewForm({ user }: { user: User }) {
             placeholder="https://example.com"
           />
         </div>
-        {/* 営業時間入力フィールド */}
+        {/* Business Hours Display */}
         <div className="space-y-2">
           <Label>営業時間</Label>
-          <div className="flex items-center space-x-2">
-            <Input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-            />
-            <span>-</span>
-            <Input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-            />
-          </div>
+          {businessHours && businessHours.length > 0 ? (
+            <div className="p-4 border rounded-md bg-muted/50 text-sm">
+              <ul>
+                {businessHours.map((item, index) => (
+                  <li key={index} className="flex justify-between">
+                    <span>{item.day}</span>
+                    <span>{item.time}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md">
+              店舗を検索すると営業時間が自動入力されます。
+            </div>
+          )}
         </div>
-        {/* カテゴリ選択フィールド */}
+        {/* カテゴリ表示フィールド */}
         <div className="space-y-2">
           <Label htmlFor="categories">カテゴリ</Label>
-          <CategorySelector
-            selectedCategories={selectedCategories}
-            onCategoryChange={setSelectedCategories}
-          />
+          <div className="flex flex-wrap gap-2">
+            {selectedCategories.length > 0 ? (
+              selectedCategories.map((category) => (
+                <Badge key={category} variant="secondary">
+                  {category}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                店舗を検索するとカテゴリが自動入力されます。
+              </p>
+            )}
+          </div>
         </div>
         {/* 詳細カテゴリ入力フィールド */}
         <div className="space-y-2">
