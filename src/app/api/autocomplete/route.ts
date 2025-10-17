@@ -4,15 +4,24 @@ import { NextResponse } from "next/server";
  * Google Places Autocomplete APIを呼び出し、場所の候補を返すAPIルート
  * クライアントから入力文字列を受け取り、Google APIを利用してオートコンプリートの予測結果を返す。
  */
-interface PlacePrediction {
-  text: {
-    text: string;
-  };
-  placeId: string;
-}
-
 interface AutocompleteSuggestion {
-  placePrediction: PlacePrediction;
+  placePrediction: {
+    placeId: string;
+    text: {
+      text: string;
+      languageCode: string;
+    };
+    structuredFormat: {
+      mainText: {
+        text: string;
+        languageCode: string;
+      };
+      secondaryText: {
+        text: string;
+        languageCode: string;
+      };
+    };
+  };
 }
 
 export async function GET(request: Request) {
@@ -63,6 +72,11 @@ export async function GET(request: Request) {
       data.suggestions?.map((suggestion: AutocompleteSuggestion) => ({
         description: suggestion.placePrediction.text.text,
         place_id: suggestion.placePrediction.placeId,
+        structured_formatting: {
+          main_text: suggestion.placePrediction.structuredFormat.mainText.text,
+          secondary_text:
+            suggestion.placePrediction.structuredFormat.secondaryText.text,
+        },
       })) || [];
 
     return NextResponse.json({ predictions });

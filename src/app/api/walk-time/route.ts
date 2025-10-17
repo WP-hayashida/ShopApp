@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
-const PLACES_NEARBY_SEARCH_URL = "https://places.googleapis.com/v1/places:searchNearby";
-const DIRECTIONS_API_URL = "https://maps.googleapis.com/maps/api/directions/json";
+const PLACES_NEARBY_SEARCH_URL =
+  "https://places.googleapis.com/v1/places:searchNearby";
+const DIRECTIONS_API_URL =
+  "https://maps.googleapis.com/maps/api/directions/json";
 
 /**
  * 最寄り駅とそこからの徒歩時間を計算するAPIルート

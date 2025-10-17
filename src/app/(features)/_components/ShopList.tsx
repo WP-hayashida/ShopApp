@@ -8,7 +8,7 @@ import { Shop } from "../_lib/types";
 // お店のリストを受け取り、グリッドレイアウトで表示するコンポーネント
 interface ShopListProps {
   shops: Shop[]; // 表示するお店の配列
-  onNavigate: (page: 'detail', shop: Shop) => void; // Add onNavigate prop
+  onNavigate: (page: "detail", shop: Shop) => void; // Add onNavigate prop
 }
 
 const ShopList: React.FC<ShopListProps> = ({ shops, onNavigate }) => {
