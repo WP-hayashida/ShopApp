@@ -51,6 +51,14 @@ const categoryOptions = Object.entries(googleTypeToJapaneseMap).map(
   })
 );
 
+const radiusOptions = [
+  { value: 1000, label: "1km以内" },
+  { value: 2000, label: "2km以内" },
+  { value: 5000, label: "5km以内" },
+  { value: 10000, label: "10km以内" },
+  { value: null, label: "指定なし" }, // Option to clear radius
+];
+
 import { SearchFilters } from "../_lib/types";
 
 interface SearchControlsProps {
@@ -67,9 +75,11 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
   initialFilters,
   onSearch,
 }) => {
-  const [localKeyword, setLocalKeyword] = useState(initialFilters.keyword);
-  const [localLocationText, setLocalLocationText] = useState(
-    initialFilters.location_text
+  const [localKeywordGeneral, setLocalKeywordGeneral] = useState(
+    initialFilters.keyword_general
+  );
+  const [localKeywordLocation, setLocalKeywordLocation] = useState(
+    initialFilters.keyword_location
   );
   const [localSearchLat, setLocalSearchLat] = useState(
     initialFilters.search_lat
@@ -93,8 +103,8 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
 
   // Sync local filters with initialFilters (from context/parent)
   useEffect(() => {
-    setLocalKeyword(initialFilters.keyword);
-    setLocalLocationText(initialFilters.location_text);
+    setLocalKeywordGeneral(initialFilters.keyword_general);
+    setLocalKeywordLocation(initialFilters.keyword_location);
     setLocalSearchLat(initialFilters.search_lat);
     setLocalSearchLng(initialFilters.search_lng);
     setLocalSearchRadius(initialFilters.search_radius);
@@ -104,7 +114,7 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
 
   // Autocomplete logic
   useEffect(() => {
-    if (!localLocationText || localLocationText.length < 2) {
+    if (!localKeywordLocation || localKeywordLocation.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -113,7 +123,7 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
     const handler = setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/autocomplete?input=${localLocationText || ""}`
+          `/api/autocomplete?input=${localKeywordLocation || ""}`
         );
         const data = await response.json();
         if (data.predictions && data.predictions.length > 0) {
@@ -131,7 +141,7 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [localLocationText]);
+  }, [localKeywordLocation]);
 
   const handleCategoryChange = (category: string, isChecked: boolean) => {
     setLocalCategories((prevCategories) => {
@@ -143,7 +153,7 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
   };
 
   const handleSuggestionSelect = async (suggestion: AutocompletePrediction) => {
-    setLocalLocationText(suggestion.description); // Set text for display
+    setLocalKeywordLocation(suggestion.description); // Set text for display
     setSuggestions([]);
     setShowSuggestions(false);
 
@@ -178,14 +188,13 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
     let finalLng = localSearchLng;
     let finalRadius = localSearchRadius;
 
-    // If location text is entered but no suggestion was selected, try geocoding
     if (
-      localLocationText &&
+      localKeywordLocation &&
       (localSearchLat === null || localSearchLng === null)
     ) {
       try {
         const response = await fetch(
-          `/api/geocode?address=${localLocationText || ""}`
+          `/api/geocode?address=${encodeURIComponent(localKeywordLocation)}`
         );
         const data = await response.json();
 
@@ -193,29 +202,22 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
           finalLat = data.latitude;
           finalLng = data.longitude;
           finalRadius = finalRadius === null ? 2000.0 : finalRadius;
-          // Ensure finalRadius is always a float, even if it was an integer
-          if (typeof finalRadius === "number" && finalRadius % 1 === 0) {
-            finalRadius = finalRadius + 0.0;
-          }
         } else {
-          setGeocodingError(data.message || "場所の検索に失敗しました。");
-          setGeocodingLoading(false);
-          return; // Stop if geocoding fails
+          console.warn("Geocoding failed for location text.");
         }
       } catch (err) {
         console.error("Geocoding API error:", err);
-        setGeocodingError("場所の検索中にエラーが発生しました。");
-        setGeocodingLoading(false);
-        return; // Stop if geocoding fails
       }
     }
+    setGeocodingLoading(false);
 
     onSearch({
-      keyword: localKeyword,
+      keyword_general: localKeywordGeneral,
+      keyword_location: localKeywordLocation,
       search_lat: finalLat,
       search_lng: finalLng,
       search_radius: finalRadius,
-      location_text: localLocationText,
+      location_text: localKeywordLocation, // Keep original text for display
       category: localCategories,
       sortBy: localSortBy,
     });
@@ -223,15 +225,16 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
   };
 
   const handleReset = () => {
-    setLocalKeyword("");
-    setLocalLocationText("");
+    setLocalKeywordGeneral("");
+    setLocalKeywordLocation("");
     setLocalSearchLat(null);
     setLocalSearchLng(null);
     setLocalSearchRadius(null);
     setLocalSortBy("created_at.desc");
     setLocalCategories([]);
     onSearch({
-      keyword: "",
+      keyword_general: "",
+      keyword_location: "",
       search_lat: null,
       search_lng: null,
       search_radius: null,
@@ -271,9 +274,9 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
               </Label>
               <Input
                 id="keyword"
-                value={localKeyword}
-                onChange={(e) => setLocalKeyword(e.target.value)}
-                placeholder="キーワードを入力"
+                value={localKeywordGeneral}
+                onChange={(e) => setLocalKeywordGeneral(e.target.value)}
+                placeholder="店名、カテゴリなど"
                 className="col-span-3"
               />
             </div>
@@ -285,12 +288,12 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
               <div className="col-span-3">
                 <Input
                   id="location"
-                  value={localLocationText}
-                  onChange={(e) => setLocalLocationText(e.target.value)}
+                  value={localKeywordLocation}
+                  onChange={(e) => setLocalKeywordLocation(e.target.value)}
                   onBlur={() =>
                     setTimeout(() => setShowSuggestions(false), 200)
                   }
-                  placeholder="地名や駅名を入力"
+                  placeholder="住所、駅名など"
                   autoComplete="off"
                 />
                 {showSuggestions && suggestions.length > 0 && (
@@ -317,6 +320,29 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
                   <p className="text-sm text-red-500 mt-1">{geocodingError}</p>
                 )}
               </div>
+            </div>
+            {/* 検索半径選択 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="searchRadius" className="text-right">
+                検索半径
+              </Label>
+              <Select
+                value={localSearchRadius !== null ? String(localSearchRadius) : "null"}
+                onValueChange={(value) =>
+                  setLocalSearchRadius(value === "null" ? null : Number(value))
+                }
+              >
+                <SelectTrigger id="searchRadius" className="col-span-3">
+                  <SelectValue placeholder="検索半径を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {radiusOptions.map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {/* カテゴリ選択 */}
             <div className="grid grid-cols-4 items-center gap-4">

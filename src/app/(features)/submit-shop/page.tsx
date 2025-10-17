@@ -165,15 +165,47 @@ function ShopNewForm({ user }: { user: User }) {
         finalPhotoUrl = autoPhotoUrl;
       }
 
+      // --- Geocoding Logic ---
+      let finalLatitude = latitude;
+      let finalLongitude = longitude;
+
+      if ((!finalLatitude || !finalLongitude) && addressInput) {
+        try {
+          console.log(`Geocoding address: "${addressInput}"`);
+          const geocodeResponse = await fetch(
+            `/api/geocode?address=${encodeURIComponent(addressInput)}`
+          );
+          if (geocodeResponse.ok) {
+            const geocodeData = await geocodeResponse.json();
+            finalLatitude = geocodeData.latitude;
+            finalLongitude = geocodeData.longitude;
+            console.log(`Geocoding successful:`, {
+              lat: finalLatitude,
+              lng: finalLongitude,
+            });
+            if (geocodeData.formatted_address) {
+              setAddressInput(geocodeData.formatted_address);
+            }
+          } else {
+            console.warn("Geocoding failed, proceeding without coordinates.");
+          }
+        } catch (geoError) {
+          console.error("Error during geocoding:", geoError);
+        }
+      }
+      // --- End Geocoding Logic ---
+
       let nearestStationName: string | null = null;
       let walkTimeFromStation: number | null = null;
-      if (latitude && longitude) {
+      if (finalLatitude && finalLongitude) {
+        // Use final coordinates
         try {
           const walkTimeResponse = await fetch(
-            `/api/walk-time?lat=${latitude}&lng=${longitude}`
+            `/api/walk-time?lat=${finalLatitude}&lng=${finalLongitude}` // Use final coordinates
           );
           if (walkTimeResponse.ok) {
             const walkTimeData = await walkTimeResponse.json();
+            console.log("[/submit-shop] Walk time data received:", walkTimeData);
             nearestStationName = walkTimeData.stationName;
             walkTimeFromStation = walkTimeData.walkTime;
           } else {
@@ -189,13 +221,14 @@ function ShopNewForm({ user }: { user: User }) {
 
       const shopPayload: ShopPayload = {
         name,
+        user_id: user.id,
         photo_url: finalPhotoUrl, // Use finalPhotoUrl
         url: url || null,
         business_hours_weekly: businessHours as unknown as Json, // Cast to Json for Supabase
         rating: rating,
         location: addressInput || null,
-        latitude,
-        longitude,
+        latitude: finalLatitude, // Use final coordinates
+        longitude: finalLongitude, // Use final coordinates
         category: selectedCategories.length > 0 ? selectedCategories : null,
         detailed_category: detailedCategory || null,
         comments: comments || null,
@@ -203,9 +236,12 @@ function ShopNewForm({ user }: { user: User }) {
         walk_time_from_station: walkTimeFromStation,
         place_id: placeId, // Save place_id
       };
+
+      console.log("[/submit-shop] Payload to be inserted:", shopPayload);
+
       const { error: insertError } = await supabase
         .from("shops")
-        .insert({ ...shopPayload, user_id: user.id });
+        .insert(shopPayload);
       if (insertError)
         throw new Error(`投稿の保存に失敗: ${insertError.message}`);
       alert("投稿が完了しました！");
@@ -284,9 +320,9 @@ function ShopNewForm({ user }: { user: User }) {
                 <Image
                   src={autoPhotoUrl}
                   alt="自動取得された写真"
-                  layout="fill"
-                  objectFit="cover"
-                  className="rounded-md"
+                  fill
+                  sizes="128px"
+                  className="rounded-md object-cover"
                 />
               </div>
             )}

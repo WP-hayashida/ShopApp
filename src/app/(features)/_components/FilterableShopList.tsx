@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 
 // フィルターの初期状態 (for SearchControls)
 const defaultSearchControlsFilters: SearchFilters = {
-  keyword: "",
+  keyword_general: "",
+  keyword_location: "",
   search_lat: null,
   search_lng: null,
   search_radius: null,
@@ -17,13 +18,13 @@ const defaultSearchControlsFilters: SearchFilters = {
   sortBy: "created_at.desc",
 };
 
-// コンポーネントのプロパティの型定義1
+// コンポーネントのプロパティの型定義
 interface FilterableShopListProps {
   initialShops: Shop[]; // 表示するお店の初期リスト
   initialRowCount?: number; // 初期表示する行数
   availableCategories: string[]; // 利用可能なカテゴリのリスト
   onNavigate: (page: "detail", shop: Shop) => void;
-  headerKeyword?: string; // Changed from initialKeyword
+  headerKeywordGeneral?: string; // Changed
   isSearching?: boolean; // New prop for search loading state
   onSearchSubmit: (filters: SearchFilters) => void; // New prop to submit filters
 }
@@ -33,7 +34,7 @@ interface FilterableShopListProps {
  * @param initialShops - 表示する店舗の初期配列
  * @param initialRowCount - 初期表示する行数（デフォルトは1行）
  * @param availableCategories - 利用可能なカテゴリの配列
- * @param headerKeyword - ヘッダー検索バーからのキーワード
+ * @param headerKeywordGeneral - ヘッダー検索バーからのキーワード
  * @param isSearching - 検索中かどうかを示すフラグ
  */
 export default function FilterableShopList({
@@ -41,7 +42,7 @@ export default function FilterableShopList({
   initialRowCount = 1,
   availableCategories,
   onNavigate,
-  headerKeyword = "", // Destructure headerKeyword with default
+  headerKeywordGeneral = "", // Changed
   isSearching = false, // Destructure isSearching with default
   onSearchSubmit, // Destructure new prop
 }: FilterableShopListProps) {
@@ -51,7 +52,7 @@ export default function FilterableShopList({
   const [searchControlsFilters, setSearchControlsFilters] =
     useState<SearchFilters>({
       ...defaultSearchControlsFilters,
-      keyword: headerKeyword || "",
+      keyword_general: headerKeywordGeneral || "",
       category: categoryFilter, // Initialize with context categoryFilter
     });
   const [expanded, setExpanded] = useState(false);
@@ -61,13 +62,13 @@ export default function FilterableShopList({
     setSearchControlsFilters((prev) => ({
       ...prev,
       category: categoryFilter,
-      keyword: searchTerm || "", // Also update keyword from context
+      keyword_general: searchTerm || "", // Also update keyword from context
     }));
   }, [categoryFilter, searchTerm]);
 
   // Function to handle search from SearchControls
   const handleSearchControlsSubmit = (filters: SearchFilters) => {
-    setSearchTerm(filters.keyword || ""); // Update searchTerm in context
+    setSearchTerm(filters.keyword_general || ""); // Update searchTerm in context
     // categoryFilter is already updated by SearchControls directly
     // location and sortBy are handled by HomePageClient's useEffect
     onSearchSubmit(filters); // Submit all filters to HomePageClient

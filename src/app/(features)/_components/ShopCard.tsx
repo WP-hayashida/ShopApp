@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
-import {
-  Heart,
-  MapPin,
-  Clock,
-  Eye,
-  Share2,
-  Bookmark,
-} from "lucide-react";
+import { Heart, MapPin, Clock, Eye, Share2, Bookmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card"; // Adjusted path
 import { Button } from "@/components/ui/button"; // Adjusted path
 import { Badge } from "@/components/ui/badge";
@@ -82,8 +75,8 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
   };
 
   return (
-    <Card className="overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group">
-      <CardContent className="p-0">
+    <Card className="w-full overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group h-80 flex flex-col">
+      <CardContent className="p-0 flex flex-col h-full">
         {/* Image Section */}
         <div className="relative overflow-hidden">
           <ImageWithFallback
@@ -119,12 +112,12 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
           </div>
         </div>
 
-        {/* Content Section */}
-        <div className="p-4 space-y-3">
+        {/* Content & Actions Wrapper */}
+        <div className="p-4 flex flex-col flex-grow">
           {/* Store Info */}
-          <div className="space-y-2">
+          <div className="space-y-2 flex-grow max-h-30 overflow-hidden">
             <h3
-              className="font-semibold text-lg leading-tight cursor-pointer hover:text-foreground/80 transition-colors"
+              className="font-semibold text-lg leading-tight cursor-pointer hover:text-foreground/80 transition-colors truncate"
               onClick={() => onNavigate("detail", shop)}
             >
               {shop.name}
@@ -143,7 +136,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="size-3" />
-                  <span>{shop.hours}</span>
+                  <span className="truncate">{shop.hours}</span>
                 </div>
               </div>
               {shop.price_range && (

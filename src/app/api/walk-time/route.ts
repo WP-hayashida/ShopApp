@@ -42,30 +42,30 @@ export async function GET(request: Request) {
   const lng = parseFloat(lngStr);
 
   try {
-    // --- ステップ1: 最寄り駅の検索 (Places API (New) Nearby Search) ---
-    console.log("[/api/walk-time] --- 1. Starting Nearby Search (v1) ---");
+    // --- ステップ1: 最寄り駅の検索 (Get multiple candidates and find closest) ---
+    console.log("[/api/walk-time] --- 1. Starting Nearby Search (Radius) ---");
     const nearbySearchResponse = await fetch(PLACES_NEARBY_SEARCH_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "x-goog-fieldmask": "places.displayName,places.location", // 必要なフィールドを明記
+        "x-goog-fieldmask": "places.displayName,places.location",
       },
       body: JSON.stringify({
         languageCode: "ja",
-        includedTypes: ["train_station"], // 鉄道駅を対象
-        maxResultCount: 1, // 必要なのは最も近い1件のみ
+        includedTypes: ["train_station", "subway_station", "light_rail_station"],
+        maxResultCount: 5, // Fetch multiple candidates
         locationRestriction: {
           circle: {
             center: {
               latitude: lat,
               longitude: lng,
             },
-            radius: 1500.0, // 半径1.5kmで検索
+            radius: 2000.0, // 2km radius
           },
         },
       }),
-      cache: "no-store", // キャッシュを無効化
+      cache: "no-store",
     });
 
     const nearbySearchData = await nearbySearchResponse.json();
@@ -76,22 +76,42 @@ export async function GET(request: Request) {
       nearbySearchData.places.length === 0
     ) {
       console.warn(
-        "[/api/walk-time] No nearby stations found with v1 API. Status:",
+        "[/api/walk-time] No nearby stations found. Status:",
         nearbySearchResponse.status,
         "Response:",
         nearbySearchData
       );
-      // 最寄り駅が見つからない場合は404を返す
       return NextResponse.json(
         { error: "No nearby stations found" },
         { status: 404 }
       );
     }
 
-    const nearestStation = nearbySearchData.places[0];
-    const stationLocation = nearestStation.location; // v1ではlocationに緯度経度が入る
-    const stationName = nearestStation.displayName.text; // v1ではdisplayName.textに名前が入る
-    console.log(`[/api/walk-time] Found nearest station: ${stationName}`);
+    // Find the closest station from the results by calculating distance
+    let closestStation: any = null;
+    let minDistanceSq = Infinity;
+
+    for (const place of nearbySearchData.places) {
+      const placeLat = place.location.latitude;
+      const placeLng = place.location.longitude;
+      const distanceSq =
+        Math.pow(lat - placeLat, 2) + Math.pow(lng - placeLng, 2);
+      if (distanceSq < minDistanceSq) {
+        minDistanceSq = distanceSq;
+        closestStation = place;
+      }
+    }
+
+    if (!closestStation) {
+      return NextResponse.json(
+        { error: "Could not determine closest station" },
+        { status: 404 }
+      );
+    }
+
+    const stationLocation = closestStation.location;
+    const stationName = closestStation.displayName.text;
+    console.log(`[/api/walk-time] Found closest station: ${stationName}`);
 
     // --- ステップ2: 徒歩時間の計算 (Directions API) ---
     console.log("[/api/walk-time] --- 2. Starting Directions Search ---");
@@ -101,12 +121,12 @@ export async function GET(request: Request) {
       `${stationLocation.latitude},${stationLocation.longitude}`
     );
     directionsUrl.searchParams.append("destination", `${lat},${lng}`);
-    directionsUrl.searchParams.append("mode", "walking"); // 徒歩モード
+    directionsUrl.searchParams.append("mode", "walking");
     directionsUrl.searchParams.append("language", "ja");
     directionsUrl.searchParams.append("key", apiKey);
 
     const directionsResponse = await fetch(directionsUrl.toString(), {
-      cache: "no-store", // キャッシュを無効化
+      cache: "no-store",
     });
     const directionsData = await directionsResponse.json();
 
@@ -115,15 +135,14 @@ export async function GET(request: Request) {
         "[/api/walk-time] Could not calculate walking directions. Status:",
         directionsData.status
       );
-      // 経路計算に失敗した場合は500を返す
       return NextResponse.json(
         { error: "Could not calculate walking directions" },
         { status: 500 }
       );
     }
 
-    const leg = directionsData.routes[0].legs[0]; // 最初のルートの最初の区間
-    const walkTimeInMinutes = Math.ceil(leg.duration.value / 60); // 秒を分に変換し、切り上げ
+    const leg = directionsData.routes[0].legs[0];
+    const walkTimeInMinutes = Math.ceil(leg.duration.value / 60);
     console.log(
       `[/api/walk-time] Calculated walk time: ${walkTimeInMinutes} minutes`
     );

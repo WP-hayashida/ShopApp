@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SearchFilters, Shop, ShopSearchRpcArgs } from "../_lib/types";
+import { SearchFilters, Shop, ShopSearchRpcArgs, RpcShopReturnType } from "../_lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useSearch } from "@/context/SearchContext";
@@ -9,8 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import FilterableShopList from "../_components/FilterableShopList";
 import { Database } from "@/lib/database.types";
 
-type RpcShopReturn =
-  Database["public"]["Functions"]["search_shops"]["Returns"][number];
+
 
 /**
  * ホームページのクライアントサイドコンポーネント
@@ -31,12 +30,12 @@ export default function HomePageClient() {
   const { searchTerm, categoryFilter } = useSearch();
   // 現在適用されているフィルターの状態
   const [appliedFilters, setAppliedFilters] = useState<SearchFilters>({
-    keyword: searchTerm,
+    keyword_general: searchTerm,
+    keyword_location: "",
     search_lat: null, // 周辺検索用緯度
     search_lng: null, // 周辺検索用経度
     search_radius: null, // 周辺検索用半径
     location_text: "", // UI表示用の場所テキスト
-    location: "", // Add this line
     category: categoryFilter,
     sortBy: "created_at.desc", // デフォルトの並び順は新着順
   });
@@ -66,11 +65,10 @@ export default function HomePageClient() {
    * サーバーサイドのRPC関数 `search_shops` を呼び出す
    */
   useEffect(() => {
-    if (!supabase) return; // Supabaseクライアントが初期化されていなければ何もしない
+    if (!supabase) return;
 
     const getShops = async () => {
-      setIsSearching(true); // 検索中フラグを立てる
-      // 現在のユーザー情報を取得（いいね状態の判定に利用）
+      setIsSearching(true);
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
@@ -78,30 +76,27 @@ export default function HomePageClient() {
 
       console.log("Calling RPC with filters:", appliedFilters);
 
-      // Always use the geo-search RPC args structure, as the Supabase function handles null geo-coordinates.
       const rpcArgs: ShopSearchRpcArgs = {
-        keyword: appliedFilters.keyword || "",
-        category_filter:
+        p_keyword_general: appliedFilters.keyword_general || null,
+        p_keyword_location: appliedFilters.keyword_location || null,
+        p_category_filter:
           appliedFilters.category && appliedFilters.category.length > 0
             ? appliedFilters.category
             : null,
-        search_lat: appliedFilters.search_lat ?? null,
-        search_lng: appliedFilters.search_lng ?? null,
-        search_radius: appliedFilters.search_radius ?? 1000.0,
-        sort_by: appliedFilters.sortBy ?? "created_at.desc",
-        current_user_id: currentUserId,
+        p_search_lat: appliedFilters.search_lat ?? null,
+        p_search_lng: appliedFilters.search_lng ?? null,
+        p_search_radius: appliedFilters.search_radius ?? 1000.0,
+        p_sort_by: appliedFilters.sortBy ?? "created_at.desc",
+        p_current_user_id: currentUserId,
       };
 
-      // データベースのRPC関数 `search_shops` を呼び出し、フィルターを適用
       const { data, error } = await supabase.rpc("search_shops", rpcArgs);
 
       if (error) {
         console.error("Error fetching shops via RPC:", error.message || error);
-        setShops([]); // エラー時は空配列をセット
+        setShops([]);
       } else if (data) {
-        // RPCから返されたデータをShopインターフェースの形式にマッピング
-        // RPC関数がリッチなデータを返すため、mapSupabaseShopToShopは不要
-        const shopsData = data.map((shop: RpcShopReturn) => ({
+        const shopsData = data.map((shop: RpcShopReturnType) => ({
           id: shop.id,
           name: shop.name,
           imageUrl: shop.photo_url_api || shop.photo_url || "/next.svg",
@@ -112,9 +107,7 @@ export default function HomePageClient() {
           detailed_category: shop.detailed_category || "",
           description: shop.comments || "説明がありません。",
           comments: shop.comments,
-          tags: shop.detailed_category
-            ? shop.detailed_category.split(",").map((tag: string) => tag.trim())
-            : [],
+          tags: shop.tags || [],
           user: {
             username: shop.username || "unknown",
             avatar_url: shop.avatar_url || null,
@@ -122,7 +115,7 @@ export default function HomePageClient() {
           likes: shop.like_count || 0,
           liked: shop.liked || false,
           rating: shop.rating || 0,
-          reviewCount: 0, // This is not in RpcShopReturn
+          reviewCount: shop.review_count || 0,
           searchable_categories_text: shop.searchable_categories_text ?? null,
           latitude: shop.latitude ?? null,
           longitude: shop.longitude ?? null,
@@ -139,32 +132,30 @@ export default function HomePageClient() {
         }));
         setShops(shopsData);
       } else {
-        setShops([]); // dataがnullやundefinedの場合も空配列をセット
+        setShops([]);
       }
       setLoading(false);
-      setIsSearching(false); // 検索中フラグを解除
+      setIsSearching(false);
     };
 
     getShops();
-  }, [supabase, appliedFilters]); // appliedFiltersの変更を監視
+  }, [supabase, appliedFilters]);
 
-  // 利用可能なカテゴリを動的に生成（現在表示されている店舗から抽出）
+  // ★★★ ここが最終修正箇所 ★★★
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     shops.forEach((shop) => {
       if (shop.category) {
         shop.category.forEach((cat) => categories.add(cat));
       }
-      if (shop.detailed_category) {
-        shop.detailed_category
-          .split(",")
-          .forEach((cat) => categories.add(cat.trim()));
+      // `shop.tags`配列を直接利用するように修正
+      if (shop.tags) {
+        shop.tags.forEach((tag) => categories.add(tag));
       }
     });
     return ["すべて", ...Array.from(categories)];
   }, [shops]);
 
-  // ローディング中の表示
   if (loading) {
     return (
       <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
@@ -185,16 +176,15 @@ export default function HomePageClient() {
 
   return (
     <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
-      {/* フィルターとソート機能を持つ店舗リストコンポーネント */}
       <FilterableShopList
-        key={JSON.stringify(appliedFilters)} // フィルター変更時にコンポーネントを強制的に再マウント
+        key={JSON.stringify(appliedFilters)}
         initialShops={shops}
         initialRowCount={2}
         availableCategories={availableCategories}
         onNavigate={handleNavigate}
-        headerKeyword={appliedFilters.keyword}
+        headerKeywordGeneral={appliedFilters.keyword_general}
         isSearching={isSearching}
-        onSearchSubmit={setAppliedFilters} // appliedFiltersのセッターを渡す
+        onSearchSubmit={setAppliedFilters}
       />
     </main>
   );

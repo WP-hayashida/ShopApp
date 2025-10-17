@@ -8,9 +8,11 @@ import { ShopFormInput, ShopPayload } from "./types";
  */
 export function transformFormInputToShopPayload(
   formData: ShopFormInput,
-  photoUrl: string | null
+  photoUrl: string | null,
+  userId: string
 ): ShopPayload {
   return {
+    user_id: userId,
     name: formData.name,
     photo_url: photoUrl,
     url: formData.url || null, // 空文字の場合はnullに変換
