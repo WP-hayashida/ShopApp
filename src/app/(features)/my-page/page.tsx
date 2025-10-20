@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
 import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getShopsByUserId, getLikedShopsByUserId } from "../_lib/shopService";
 import { upsertUserProfile, Profile } from "../_lib/userService";
 
@@ -24,6 +24,7 @@ const defaultSearchFilters: SearchFilters = {
  */
 export default function MyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = useMemo(() => createClient(), []);
 
   const [user, setUser] = useState<User | null>(null);
@@ -150,6 +151,12 @@ export default function MyPage() {
     setCurrentFilters(filters);
   };
 
+  const activeTab = searchParams.get('tab') || 'favorites';
+
+  const handleNavigateToShopDetail = (shop: Shop) => {
+    router.push(`/shops/${shop.id}?fromTab=${activeTab}`);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -174,7 +181,12 @@ export default function MyPage() {
     <div className="container mx-auto max-w-2xl py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">マイページ</h1>
 
-      <Tabs defaultValue="favorites">
+      <Tabs
+        defaultValue={activeTab}
+        onValueChange={(value) => {
+          router.push(`/my-page?tab=${value}`);
+        }}
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="favorites">お気に入りのお店</TabsTrigger>
           <TabsTrigger value="posts">投稿したお店</TabsTrigger>
@@ -198,7 +210,7 @@ export default function MyPage() {
               <FilterableShopList
                 initialShops={shops}
                 availableCategories={[]}
-                onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)}
+                onNavigate={(page, shop) => handleNavigateToShopDetail(shop)}
                 onSearchSubmit={handleSearchSubmit}
                 onLikeToggle={handleLikeToggle}
                 isLiking={isLiking}
@@ -217,7 +229,7 @@ export default function MyPage() {
               <FilterableShopList
                 initialShops={likedShops}
                 availableCategories={[]}
-                onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)}
+                onNavigate={(page, shop) => handleNavigateToShopDetail(shop)}
                 onSearchSubmit={handleSearchSubmit}
                 onLikeToggle={handleLikeToggle}
                 isLiking={isLiking}

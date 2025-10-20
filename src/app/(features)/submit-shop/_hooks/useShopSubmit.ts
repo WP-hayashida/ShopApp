@@ -172,7 +172,7 @@ export const useShopSubmit = (user: User) => {
         throw new Error(`投稿の保存に失敗: ${insertError.message}`);
 
       alert("投稿が完了しました！");
-      router.push("/");
+      router.back();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "投稿中にエラーが発生しました。";

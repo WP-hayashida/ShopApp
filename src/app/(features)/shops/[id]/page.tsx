@@ -55,7 +55,7 @@ export default function ShopDetailPage() {
   }, []);
 
   const handleNavigateBack = () => {
-    router.push("/");
+    router.back();
   };
 
   const handleLikeToggle = async (shopId: string, newLikedStatus: boolean) => {
