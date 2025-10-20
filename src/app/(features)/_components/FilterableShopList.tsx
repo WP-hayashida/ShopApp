@@ -150,7 +150,14 @@ export default function FilterableShopList({
           ))}
         </div>
       ) : (
-        <ShopList shops={shopsToShow} onNavigate={onNavigate} onLikeToggle={onLikeToggle} isLiking={isLiking} user={user} onEdit={onEdit} />
+        <ShopList
+          shops={shopsToShow}
+          onNavigate={onNavigate}
+          onLikeToggle={onLikeToggle}
+          isLiking={isLiking}
+          user={user}
+          onEdit={onEdit}
+        />
       )}
       {/* 「さらに表示」ボタン */}
       {!expanded && initialShops.length > shopsToShow.length && (

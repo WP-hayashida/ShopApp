@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
-import { Heart, MapPin, Clock, Eye, Share2, Bookmark, Edit } from "lucide-react";
+import {
+  Heart,
+  MapPin,
+  Clock,
+  Eye,
+  Share2,
+  Bookmark,
+  Edit,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card"; // Adjusted path
 import { Button } from "@/components/ui/button"; // Adjusted path
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +32,14 @@ interface ShopCardProps {
   onEdit?: (shopId: string) => void;
 }
 
-const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate, onLikeToggle, isLiking, user, onEdit }) => {
-
+const ShopCard: React.FC<ShopCardProps> = ({
+  shop,
+  onNavigate,
+  onLikeToggle,
+  isLiking,
+  user,
+  onEdit,
+}) => {
   const handleLikeClick = () => {
     if (!user) {
       alert("いいねするにはログインしてください。");

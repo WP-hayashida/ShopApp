@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { ShopPayload } from '@/app/(features)/_lib/types';
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { ShopPayload } from "@/app/(features)/_lib/types";
 
 export async function POST(request: Request) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const formData = await request.json();
@@ -26,56 +28,72 @@ export async function POST(request: Request) {
   let walk_time_from_station: number | null = null;
 
   if (formData.location) {
-    console.log('Attempting to geocode location:', formData.location);
+    console.log("Attempting to geocode location:", formData.location);
     try {
       // Call Geocoding API
       const geocodeUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/geocode`;
-      console.log('Calling geocode API:', geocodeUrl);
+      console.log("Calling geocode API:", geocodeUrl);
       const geocodeRes = await fetch(geocodeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address: formData.location }),
       });
       const geocodeData = await geocodeRes.json();
-      console.log('Geocode API response:', geocodeData);
+      console.log("Geocode API response:", geocodeData);
 
       if (geocodeData.lat && geocodeData.lng) {
         latitude = geocodeData.lat;
         longitude = geocodeData.lng;
         place_id = geocodeData.place_id || null;
         formatted_address = geocodeData.formatted_address || null;
-        console.log('Geocoding successful:', { latitude, longitude, place_id, formatted_address });
+        console.log("Geocoding successful:", {
+          latitude,
+          longitude,
+          place_id,
+          formatted_address,
+        });
       } else {
-        console.log('Geocoding did not return lat/lng for:', formData.location);
+        console.log("Geocoding did not return lat/lng for:", formData.location);
       }
 
       // If place_id is available, call Place Details API
       if (place_id) {
-        console.log('Attempting to get place details for place_id:', place_id);
+        console.log("Attempting to get place details for place_id:", place_id);
         const placeDetailsUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/placedetails`;
-        console.log('Calling place details API:', placeDetailsUrl);
+        console.log("Calling place details API:", placeDetailsUrl);
         const placeDetailsRes = await fetch(placeDetailsUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ place_id: place_id }),
         });
         const placeDetailsData = await placeDetailsRes.json();
-        console.log('Place Details API response:', placeDetailsData);
+        console.log("Place Details API response:", placeDetailsData);
 
         if (placeDetailsData.result) {
-          business_hours_weekly = placeDetailsData.result.opening_hours?.weekday_text || null;
-          phone_number = placeDetailsData.result.international_phone_number || null;
-          photo_url_api = placeDetailsData.result.photos?.[0]?.photo_reference || null;
+          business_hours_weekly =
+            placeDetailsData.result.opening_hours?.weekday_text || null;
+          phone_number =
+            placeDetailsData.result.international_phone_number || null;
+          photo_url_api =
+            placeDetailsData.result.photos?.[0]?.photo_reference || null;
           api_last_updated = new Date().toISOString();
-          console.log('Place details successful:', { business_hours_weekly, phone_number, photo_url_api, api_last_updated });
+          console.log("Place details successful:", {
+            business_hours_weekly,
+            phone_number,
+            photo_url_api,
+            api_last_updated,
+          });
         } else {
-          console.log('Place details did not return result for place_id:', place_id);
+          console.log(
+            "Place details did not return result for place_id:",
+            place_id
+          );
         }
       } else {
-        console.log('No place_id available for place details lookup.');
+        console.log("No place_id available for place details lookup.");
       }
     } catch (error) {
-      console.error('Error during geocoding or place details:', error);
+      console.error("Error during geocoding or place details:", error);
       // Decide how to handle this error: proceed without geo data, or return an error
     }
   }
@@ -90,7 +108,6 @@ export async function POST(request: Request) {
     photo_url = photo_url_api || "/next.svg"; // Placeholder
   }
 
-
   const shopPayload: ShopPayload = {
     name: formData.name,
     photo_url: photo_url, // This will be the uploaded image URL or placeholder
@@ -99,7 +116,8 @@ export async function POST(request: Request) {
     rating: null, // To be set by reviews
     location: formData.location, // Original text location
     category: formData.categories,
-    detailed_category: formData.detailed_category || formData.categories.join(','), // Use detailed_category from form or categories
+    detailed_category:
+      formData.detailed_category || formData.categories.join(","), // Use detailed_category from form or categories
     comments: formData.description,
     user_id: user.id, // Now required
     latitude: latitude,
@@ -115,12 +133,18 @@ export async function POST(request: Request) {
     price_range: null, // Not in form yet
   };
 
-  const { data, error } = await supabase.from('shops').insert([shopPayload]).select();
+  const { data, error } = await supabase
+    .from("shops")
+    .insert([shopPayload])
+    .select();
 
   if (error) {
-    console.error('Error inserting shop:', error);
+    console.error("Error inserting shop:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ message: 'Shop submitted successfully', shop: data[0] }, { status: 201 });
+  return NextResponse.json(
+    { message: "Shop submitted successfully", shop: data[0] },
+    { status: 201 }
+  );
 }

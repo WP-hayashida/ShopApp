@@ -1,7 +1,13 @@
-import { createBrowserClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { Shop, RpcShopReturnType, ShopSearchRpcArgs, SearchFilters, ShopPayload } from './types';
-import { mapRpcShopToShop } from './shopMapper';
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  Shop,
+  RpcShopReturnType,
+  ShopSearchRpcArgs,
+  SearchFilters,
+  ShopPayload,
+} from "./types";
+import { mapRpcShopToShop } from "./shopMapper";
 
 let supabase: SupabaseClient | null = null;
 
@@ -30,27 +36,30 @@ export const searchShops = async (
   shopId?: string | null
 ): Promise<Shop[]> => {
   const supabaseClient = getSupabase();
-  const { data: { user: currentUser } } = await supabaseClient.auth.getUser();
+  const {
+    data: { user: currentUser },
+  } = await supabaseClient.auth.getUser();
   const currentUserId = currentUser?.id || null;
 
   const rpcArgs: ShopSearchRpcArgs = {
     p_keyword_general: filters.keyword_general || null,
     p_keyword_location: filters.keyword_location || null,
-    p_category_filter: filters.category && filters.category.length > 0 ? filters.category : null,
+    p_category_filter:
+      filters.category && filters.category.length > 0 ? filters.category : null,
     p_search_lat: filters.search_lat ?? null,
     p_search_lng: filters.search_lng ?? null,
     p_search_radius: filters.search_radius ?? 1000.0,
-    p_sort_by: filters.sortBy ?? 'created_at.desc',
+    p_sort_by: filters.sortBy ?? "created_at.desc",
     p_current_user_id: currentUserId,
     p_posted_by_user_id: postedByUserId || null,
     p_liked_by_user_id: likedByUserId || null,
     p_shop_id: shopId || null,
   };
 
-  const { data, error } = await supabaseClient.rpc('search_shops', rpcArgs);
+  const { data, error } = await supabaseClient.rpc("search_shops", rpcArgs);
 
   if (error) {
-    console.error('Error fetching shops via RPC:', error.message || error);
+    console.error("Error fetching shops via RPC:", error.message || error);
     return [];
   }
 
@@ -75,48 +84,55 @@ export const getShopById = async (id: string): Promise<Shop | null> => {
  * @param newPhoto 新しい写真ファイル
  * @returns 更新された店舗データ
  */
-export const updateShop = async (id: string, updates: Partial<ShopPayload>, newPhoto: File | null): Promise<any> => {
-    const supabaseClient = getSupabase();
-    const { data: { user } } = await supabaseClient.auth.getUser();
+export const updateShop = async (
+  id: string,
+  updates: Partial<ShopPayload>,
+  newPhoto: File | null
+): Promise<any> => {
+  const supabaseClient = getSupabase();
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
 
-    if (!user) throw new Error('User not authenticated.');
+  if (!user) throw new Error("User not authenticated.");
 
-    let photo_url = updates.photo_url;
+  let photo_url = updates.photo_url;
 
-    if (newPhoto) {
-        const fileExt = newPhoto.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage
-            .from('shop-photos')
-            .upload(fileName, newPhoto);
+  if (newPhoto) {
+    const fileExt = newPhoto.name.split(".").pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    const { data: uploadData, error: uploadError } =
+      await supabaseClient.storage
+        .from("shop-photos")
+        .upload(fileName, newPhoto);
 
-        if (uploadError) {
-            throw new Error(`Failed to upload photo: ${uploadError.message}`);
-        }
-
-        const { data: publicUrlData } = supabaseClient.storage
-            .from('shop-photos')
-            .getPublicUrl(uploadData.path);
-        photo_url = publicUrlData.publicUrl;
+    if (uploadError) {
+      throw new Error(`Failed to upload photo: ${uploadError.message}`);
     }
 
-    const finalUpdates = {
-        ...updates,
-        photo_url,
-    };
+    const { data: publicUrlData } = supabaseClient.storage
+      .from("shop-photos")
+      .getPublicUrl(uploadData.path);
+    photo_url = publicUrlData.publicUrl;
+  }
 
-    const { data, error } = await supabaseClient
-        .from('shops')
-        .update(finalUpdates)
-        .eq('id', id)
-        .select()
-        .single();
+  const finalUpdates = {
+    ...updates,
+    photo_url,
+  };
 
-    if (error) {
-        throw new Error(`Failed to update shop: ${error.message}`);
-    }
+  const { data, error } = await supabaseClient
+    .from("shops")
+    .update(finalUpdates)
+    .eq("id", id)
+    .select()
+    .single();
 
-    return data;
+  if (error) {
+    throw new Error(`Failed to update shop: ${error.message}`);
+  }
+
+  return data;
 };
 
 /**
@@ -124,12 +140,12 @@ export const updateShop = async (id: string, updates: Partial<ShopPayload>, newP
  * @param id 店舗ID
  */
 export const deleteShop = async (id: string): Promise<void> => {
-    const supabaseClient = getSupabase();
-    const { error } = await supabaseClient.from('shops').delete().eq('id', id);
+  const supabaseClient = getSupabase();
+  const { error } = await supabaseClient.from("shops").delete().eq("id", id);
 
-    if (error) {
-        throw new Error(`Failed to delete shop: ${error.message}`);
-    }
+  if (error) {
+    throw new Error(`Failed to delete shop: ${error.message}`);
+  }
 };
 
 /**
@@ -138,7 +154,10 @@ export const deleteShop = async (id: string): Promise<void> => {
  * @param filters 検索フィルター
  * @returns 店舗データの配列
  */
-export const getShopsByUserId = async (userId: string, filters: SearchFilters): Promise<Shop[]> => {
+export const getShopsByUserId = async (
+  userId: string,
+  filters: SearchFilters
+): Promise<Shop[]> => {
   return searchShops(filters, userId, null);
 };
 
@@ -148,6 +167,9 @@ export const getShopsByUserId = async (userId: string, filters: SearchFilters): 
  * @param filters 検索フィルター
  * @returns 店舗データの配列
  */
-export const getLikedShopsByUserId = async (userId: string, filters: SearchFilters): Promise<Shop[]> => {
+export const getLikedShopsByUserId = async (
+  userId: string,
+  filters: SearchFilters
+): Promise<Shop[]> => {
   return searchShops(filters, null, userId);
 };

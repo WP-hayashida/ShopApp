@@ -32,7 +32,9 @@ export const useShopSubmit = (user: User) => {
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [autoPhotoUrl, setAutoPhotoUrl] = useState<string | null>(null);
   const [rating, setRating] = useState<number | null>(null);
-  const [businessHours, setBusinessHours] = useState<{ day: string; time: string }[] | null>(null);
+  const [businessHours, setBusinessHours] = useState<
+    { day: string; time: string }[] | null
+  >(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +62,9 @@ export const useShopSubmit = (user: User) => {
     setPlaceId(suggestion.place_id);
 
     try {
-      const response = await fetch(`/api/placedetails?place_id=${suggestion.place_id}`);
+      const response = await fetch(
+        `/api/placedetails?place_id=${suggestion.place_id}`
+      );
       const data = await response.json();
       if (data) {
         setName(data.name || suggestion.structured_formatting.main_text);
@@ -96,7 +100,8 @@ export const useShopSubmit = (user: User) => {
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("shop-photos")
           .upload(fileName, photo);
-        if (uploadError) throw new Error(`写真のアップロードに失敗: ${uploadError.message}`);
+        if (uploadError)
+          throw new Error(`写真のアップロードに失敗: ${uploadError.message}`);
         const { data: publicUrlData } = supabase.storage
           .from("shop-photos")
           .getPublicUrl(uploadData.path);
@@ -109,7 +114,9 @@ export const useShopSubmit = (user: User) => {
       let finalLongitude = longitude;
       if ((!finalLatitude || !finalLongitude) && addressInput) {
         try {
-          const geocodeResponse = await fetch(`/api/geocode?address=${encodeURIComponent(addressInput)}`);
+          const geocodeResponse = await fetch(
+            `/api/geocode?address=${encodeURIComponent(addressInput)}`
+          );
           if (geocodeResponse.ok) {
             const geocodeData = await geocodeResponse.json();
             finalLatitude = geocodeData.latitude;
@@ -127,7 +134,9 @@ export const useShopSubmit = (user: User) => {
       let walkTimeFromStation: number | null = null;
       if (finalLatitude && finalLongitude) {
         try {
-          const walkTimeResponse = await fetch(`/api/walk-time?lat=${finalLatitude}&lng=${finalLongitude}`);
+          const walkTimeResponse = await fetch(
+            `/api/walk-time?lat=${finalLatitude}&lng=${finalLongitude}`
+          );
           if (walkTimeResponse.ok) {
             const walkTimeData = await walkTimeResponse.json();
             nearestStationName = walkTimeData.stationName;
@@ -156,13 +165,17 @@ export const useShopSubmit = (user: User) => {
         place_id: placeId,
       };
 
-      const { error: insertError } = await supabase.from("shops").insert(shopPayload);
-      if (insertError) throw new Error(`投稿の保存に失敗: ${insertError.message}`);
-      
+      const { error: insertError } = await supabase
+        .from("shops")
+        .insert(shopPayload);
+      if (insertError)
+        throw new Error(`投稿の保存に失敗: ${insertError.message}`);
+
       alert("投稿が完了しました！");
       router.push("/");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "投稿中にエラーが発生しました。";
+      const message =
+        err instanceof Error ? err.message : "投稿中にエラーが発生しました。";
       setError(message);
     } finally {
       setLoading(false);
@@ -170,14 +183,20 @@ export const useShopSubmit = (user: User) => {
   };
 
   return {
-    name, setName,
-    addressInput, setAddressInput,
+    name,
+    setName,
+    addressInput,
+    setAddressInput,
     suggestions,
-    photo, setPhoto,
-    url, setUrl,
+    photo,
+    setPhoto,
+    url,
+    setUrl,
     selectedCategories,
-    detailedCategory, setDetailedCategory,
-    comments, setComments,
+    detailedCategory,
+    setDetailedCategory,
+    comments,
+    setComments,
     autoPhotoUrl,
     rating,
     businessHours,

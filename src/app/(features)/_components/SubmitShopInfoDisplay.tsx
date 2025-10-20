@@ -77,7 +77,12 @@ export const SubmitShopInfoDisplay = ({
       {/* 場所表示フィールド */}
       <div className="space-y-2">
         <Label htmlFor="location">場所</Label>
-        <Input id="location" value={locationText} disabled placeholder="店舗を検索すると自動入力されます" />
+        <Input
+          id="location"
+          value={locationText}
+          disabled
+          placeholder="店舗を検索すると自動入力されます"
+        />
       </div>
     </>
   );

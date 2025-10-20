@@ -327,7 +327,11 @@ export const SearchControls: React.FC<SearchControlsProps> = ({
                 検索半径
               </Label>
               <Select
-                value={localSearchRadius !== null ? String(localSearchRadius) : "null"}
+                value={
+                  localSearchRadius !== null
+                    ? String(localSearchRadius)
+                    : "null"
+                }
                 onValueChange={(value) =>
                   setLocalSearchRadius(value === "null" ? null : Number(value))
                 }

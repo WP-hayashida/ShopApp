@@ -78,22 +78,25 @@ function ShopNewForm({ user }: { user: User }) {
         </div>
 
         <SubmitShopInfoDisplay
-            rating={rating}
-            businessHours={businessHours}
-            selectedCategories={selectedCategories}
-            locationText={addressInput}
+          rating={rating}
+          businessHours={businessHours}
+          selectedCategories={selectedCategories}
+          locationText={addressInput}
         />
 
         <PhotoInput
-            initialImageUrl={autoPhotoUrl}
-            photo={photo}
-            onPhotoChange={setPhoto}
+          initialImageUrl={autoPhotoUrl}
+          photo={photo}
+          onPhotoChange={setPhoto}
         />
 
         <UrlInput value={url} onChange={setUrl} />
 
-        <DetailedCategoryInput value={detailedCategory} onChange={setDetailedCategory} />
-        
+        <DetailedCategoryInput
+          value={detailedCategory}
+          onChange={setDetailedCategory}
+        />
+
         <CommentTextarea value={comments} onChange={setComments} />
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
