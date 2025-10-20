@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { Shop } from "@/app/(features)/_lib/types";
+import { Shop, SearchFilters } from "@/app/(features)/_lib/types";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/app/(features)/_components/ProfileForm";
 import FilterableShopList from "@/app/(features)/_components/FilterableShopList";
-import { SearchFilters } from "@/app/(features)/_lib/types"; // Import SearchFilters
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mapSupabaseShopToShop, RawSupabaseShop } from "../_lib/shopMapper"; // Import RawSupabaseShop
 import { useRouter } from "next/navigation";
+import { getShopsByUserId, getLikedShopsByUserId } from "../_lib/shopService";
+import { upsertUserProfile, Profile } from "../_lib/userService";
 
 // デフォルトの検索フィルター
 const defaultSearchFilters: SearchFilters = {
-  keyword: "",
-  location: "",
-  category: [],
-  sortBy: "created_at.asc",
+  keyword_general: "",
+  sortBy: "created_at.desc",
 };
 
 /**
@@ -26,193 +24,43 @@ const defaultSearchFilters: SearchFilters = {
  */
 export default function MyPage() {
   const router = useRouter();
-  // Supabaseクライアントの初期化
   const supabase = useMemo(() => createClient(), []);
 
-  // ステート変数の定義
-  const [user, setUser] = useState<User | null>(null); // ログインユーザー情報
-  const [profile, setProfile] = useState<{
-    // ユーザープロフィール
-    username: string;
-    avatar_url: string | null;
-  } | null>(null);
-  const [loading, setLoading] = useState(true); // ローディング状態
-  const [shops, setShops] = useState<Shop[]>([]); // ユーザーが投稿したお店のリスト
-  const [likedShops, setLikedShops] = useState<Shop[]>([]); // ユーザーがお気に入りしたお店のリスト
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [likedShops, setLikedShops] = useState<Shop[]>([]);
   const [currentFilters, setCurrentFilters] =
-    useState<SearchFilters>(defaultSearchFilters); // 検索フィルターの状態
+    useState<SearchFilters>(defaultSearchFilters);
+  const [isLiking, setIsLiking] = useState(false);
 
-  // 副作用フック：ユーザー情報と関連データの取得
-  useEffect(() => {
-    const fetchUserAndData = async (filters: SearchFilters) => {
-      // ユーザー情報を取得
-      const {
-        data: { user: fetchedUser },
-      } = await supabase.auth.getUser();
-      setUser(fetchedUser);
+  const fetchUserData = useCallback(
+    async (user: User, filters: SearchFilters) => {
+      setLoading(true);
+      const [userProfile, userShops, userLikedShops] = await Promise.all([
+        upsertUserProfile(user),
+        getShopsByUserId(user.id, filters),
+        getLikedShopsByUserId(user.id, filters),
+      ]);
 
-      if (fetchedUser) {
-        // プロフィール情報を取得
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("username, avatar_url")
-          .eq("id", fetchedUser.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-        } else if (profileData) {
-          setProfile(profileData);
-        } else {
-          // プロフィールが存在しない場合、デフォルトのプロフィールを作成
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert({
-              id: fetchedUser.id,
-              username: fetchedUser.user_metadata?.name || "Unnamed User",
-              avatar_url: fetchedUser.user_metadata?.avatar_url || null,
-            });
-
-          if (insertError) {
-            console.error("Error creating default profile:", insertError);
-          } else {
-            setProfile({
-              username: fetchedUser.user_metadata?.name || "Unnamed User",
-              avatar_url: fetchedUser.user_metadata?.avatar_url || null,
-            });
-          }
-        }
-
-        // ユーザーが投稿したお店の情報を取得
-        let shopsQuery = supabase
-          .from("shops")
-          .select(
-            `
-            id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
-            likes(user_id),
-            ratings(rating),
-            reviews(id)
-          `
-          )
-          .eq("user_id", fetchedUser.id);
-
-        // フィルターを適用
-        if (filters.keyword) {
-          shopsQuery = shopsQuery.ilike(
-            "name",
-            `%${filters.keyword as string}%`
-          );
-        }
-        if (filters.location) {
-          shopsQuery = shopsQuery.eq("location", filters.location);
-        }
-        if (filters.category && filters.category.length > 0) {
-          shopsQuery = shopsQuery.contains("category", filters.category);
-        }
-        const sortByValue = (filters.sortBy ||
-          defaultSearchFilters.sortBy) as string;
-        const [field, order] = sortByValue.split(".");
-        if (field && order) {
-          shopsQuery = shopsQuery.order(field, { ascending: order === "asc" });
-        }
-
-        const { data: fetchedShops, error: shopsError } = await shopsQuery;
-
-        if (shopsError) {
-          console.error("Error fetching shops for MyPage:", shopsError);
-        } else {
-          const mappedShops = await Promise.all(
-            (fetchedShops || []).map((shop: RawSupabaseShop) =>
-              mapSupabaseShopToShop(shop, supabase, fetchedUser.id)
-            )
-          );
-          setShops(mappedShops);
-        }
-
-        // ユーザーがお気に入りしたお店のIDリストを取得
-        const { data: likedShopIds, error: likedShopIdsError } = await supabase
-          .from("likes")
-          .select("shop_id")
-          .eq("user_id", fetchedUser.id);
-
-        if (likedShopIdsError) {
-          console.error("Error fetching liked shop IDs:", likedShopIdsError);
-        } else {
-          const shopIds = likedShopIds.map((like) => like.shop_id);
-
-          // お店の情報を取得
-          let likedShopsQuery = supabase
-            .from("shops")
-            .select(
-              `
-              id, created_at, name, photo_url, url, business_hours, location, category, detailed_category, comments, user_id, searchable_categories_text,
-              likes(user_id),
-              ratings(rating),
-              reviews(id)
-            `
-            )
-            .in("id", shopIds);
-
-          // フィルターを適用
-          if (filters.keyword) {
-            likedShopsQuery = likedShopsQuery.ilike(
-              "name",
-              `%${filters.keyword as string}%`
-            );
-          }
-          if (filters.location) {
-            likedShopsQuery = likedShopsQuery.eq("location", filters.location);
-          }
-          if (filters.category && filters.category.length > 0) {
-            likedShopsQuery = likedShopsQuery.contains(
-              "category",
-              filters.category
-            );
-          }
-          const likedSortByValue = (filters.sortBy ||
-            defaultSearchFilters.sortBy) as string;
-          const [likedField, likedOrder] = likedSortByValue.split(".");
-          if (likedField && likedOrder) {
-            likedShopsQuery = likedShopsQuery.order(likedField, {
-              ascending: likedOrder === "asc",
-            });
-          }
-
-          const { data: fetchedLikedShops, error: likedShopsError } =
-            await likedShopsQuery;
-
-          if (likedShopsError) {
-            console.error("Error fetching liked shops:", likedShopsError);
-          } else {
-            const mappedLikedShops = await Promise.all(
-              (fetchedLikedShops || []).map((shop: RawSupabaseShop) =>
-                mapSupabaseShopToShop(shop, supabase, fetchedUser.id)
-              )
-            );
-            setLikedShops(mappedLikedShops);
-          }
-        }
-      }
+      setProfile(userProfile);
+      setShops(userShops);
+      setLikedShops(userLikedShops);
       setLoading(false);
-    };
+    },
+    []
+  );
 
-    if (user?.id) {
-      // ユーザーがログインしている場合のみデータをフェッチ
-      fetchUserAndData(currentFilters); // currentFiltersを渡す
-    } else {
-      setLoading(false); // 未ログイン時はローディングを終了
-      setShops([]); // 未ログイン時はショップリストをクリア
-      setLikedShops([]); // 未ログイン時はお気に入りリストをクリア
-    }
-
-    // 認証状態の変更を監視
+  useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user ?? null);
-        // 認証状態が変わったらデータを再取得
-        if (session?.user) {
-          fetchUserAndData(currentFilters); // currentFiltersを渡して再フェッチ
+        const sessionUser = session?.user ?? null;
+        setUser(sessionUser);
+        if (sessionUser) {
+          fetchUserData(sessionUser, currentFilters);
         } else {
+          setProfile(null);
           setShops([]);
           setLikedShops([]);
           setLoading(false);
@@ -220,13 +68,75 @@ export default function MyPage() {
       }
     );
 
-    // クリーンアップ関数：リスナーを解除
+    // 初回ロード時にユーザー情報を取得
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user);
+        fetchUserData(user, currentFilters);
+      } else {
+        setLoading(false);
+      }
+    });
+
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase, user?.id, currentFilters]); // currentFiltersを依存配列に追加
+  }, [supabase, currentFilters, fetchUserData]);
 
-  // Googleでサインインする処理
+  const handleLikeToggle = async (shopId: string, newLikedStatus: boolean) => {
+    if (!user) return;
+    setIsLiking(true);
+
+    try {
+      if (newLikedStatus) {
+        const { error } = await supabase.from("likes").insert({
+          user_id: user.id,
+          shop_id: shopId,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("likes")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("shop_id", shopId);
+        if (error) throw error;
+      }
+
+      const updateShopState = (shops: Shop[]) =>
+        shops.map((s) => {
+          if (s.id === shopId) {
+            return {
+              ...s,
+              liked: newLikedStatus,
+              likes: s.likes + (newLikedStatus ? 1 : -1),
+            };
+          }
+          return s;
+        });
+
+      setShops(updateShopState);
+
+      if (newLikedStatus) {
+        const likedShop = shops.find((s) => s.id === shopId);
+        if (likedShop && !likedShops.some((s) => s.id === shopId)) {
+          setLikedShops((prev) => [
+            ...prev,
+            { ...likedShop, liked: true, likes: likedShop.likes + 1 },
+          ]);
+        } else {
+          setLikedShops(updateShopState);
+        }
+      } else {
+        setLikedShops((prev) => prev.filter((s) => s.id !== shopId));
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -236,12 +146,10 @@ export default function MyPage() {
     });
   };
 
-  // FilterableShopListからの検索要求を処理するハンドラ
   const handleSearchSubmit = (filters: SearchFilters) => {
     setCurrentFilters(filters);
   };
 
-  // ローディング中の表示
   if (loading) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -250,7 +158,6 @@ export default function MyPage() {
     );
   }
 
-  // 未ログイン時の表示
   if (!user) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
@@ -263,9 +170,6 @@ export default function MyPage() {
     );
   }
 
-  const myPosts = shops;
-
-  // ログイン後の表示
   return (
     <div className="container mx-auto max-w-2xl py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">マイページ</h1>
@@ -276,7 +180,6 @@ export default function MyPage() {
           <TabsTrigger value="posts">投稿したお店</TabsTrigger>
           <TabsTrigger value="profile">プロフィール</TabsTrigger>
         </TabsList>
-        {/* プロフィールタブ */}
         <TabsContent value="profile">
           <section className="mt-8">
             {profile ? (
@@ -289,15 +192,18 @@ export default function MyPage() {
             )}
           </section>
         </TabsContent>
-        {/* 投稿したお店タブ */}
         <TabsContent value="posts">
           <section className="mt-8">
-            {myPosts.length > 0 ? (
+            {shops.length > 0 ? (
               <FilterableShopList
-                initialShops={myPosts}
-                availableCategories={[]} // Provide an empty array for now
+                initialShops={shops}
+                availableCategories={[]}
                 onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)}
-                onSearchSubmit={handleSearchSubmit} // Add this
+                onSearchSubmit={handleSearchSubmit}
+                onLikeToggle={handleLikeToggle}
+                isLiking={isLiking}
+                user={user}
+                onEdit={(shopId) => router.push(`/my-page/edit/${shopId}`)}
               />
             ) : (
               <p>まだ投稿したお店はありません。</p>
@@ -310,9 +216,12 @@ export default function MyPage() {
             {likedShops.length > 0 ? (
               <FilterableShopList
                 initialShops={likedShops}
-                availableCategories={[]} // Provide an empty array for now
+                availableCategories={[]}
                 onNavigate={(page, shop) => router.push(`/shops/${shop.id}`)}
-                onSearchSubmit={handleSearchSubmit} // Add this
+                onSearchSubmit={handleSearchSubmit}
+                onLikeToggle={handleLikeToggle}
+                isLiking={isLiking}
+                user={user}
               />
             ) : (
               <p>お気に入りのお店はまだありません。</p>

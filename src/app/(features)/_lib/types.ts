@@ -12,6 +12,7 @@ export interface BusinessHours {
  * ユーザー情報を表すインターフェース
  */
 export interface User {
+  id: string; // ユーザーID
   username: string; // ユーザー名
   avatar_url: string | null; // アバター画像のURL
 }
@@ -98,6 +99,9 @@ export interface ShopSearchRpcArgs {
   p_search_radius: number | null;
   p_sort_by: string;
   p_current_user_id: string | null;
+  p_posted_by_user_id?: string | null;
+  p_liked_by_user_id?: string | null;
+  p_shop_id?: string | null;
 }
 
 /**

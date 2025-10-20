@@ -227,7 +227,6 @@ export function StoreDetail({
             <div>
               <h1 className="text-3xl font-bold mb-2">{store.name}</h1>
               <div className="flex flex-wrap gap-1 items-center">
-                {" "}
                 {/* Added items-center */}
                 {store.category.map((cat, index) => {
                   const catConfig = getCategoryConfig(cat);
@@ -329,7 +328,7 @@ export function StoreDetail({
                         />
                         <span className="font-medium">
                           {store.rating?.toFixed(1) ?? "N/A"}
-                        </span>{" "}
+                        </span>
                         {/* Use store.rating */}
                       </div>
                       <span className="text-muted-foreground">
@@ -345,7 +344,7 @@ export function StoreDetail({
                           <Button variant="secondary" size="sm">
                             <MapPin size={16} className="mr-1" />
                             MAP
-                          </Button>{" "}
+                          </Button>
                         </a>
                       )}
                     </div>
@@ -398,13 +397,13 @@ export function StoreDetail({
                             </AccordionItem>
                           </Accordion>
                         </div>
-                      </div>{" "}
+                      </div>
                       {/* Corrected closing tag */}
                       {/* 電話番号 */}
                       {store.phone_number && (
                         <div className="flex items-center gap-2">
                           <Phone size={16} />
-                          <span>{store.phone_number}</span>{" "}
+                          <span>{store.phone_number}</span>
                           {/* Use store.phone_number */}
                         </div>
                       )}
@@ -412,7 +411,7 @@ export function StoreDetail({
                       {store.price_range && (
                         <div className="flex items-center gap-2">
                           <BadgeJapaneseYen size={16} />
-                          <span>{store.price_range}</span>{" "}
+                          <span>{store.price_range}</span>
                           {/* Use store.price_range */}
                         </div>
                       )}

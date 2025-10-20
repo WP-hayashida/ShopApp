@@ -1,11 +1,15 @@
 CREATE OR REPLACE FUNCTION public.search_shops(
-    keyword text,
-    category_filter text[],
-    search_lat double precision,
-    search_lng double precision,
-    search_radius double precision,
-    sort_by text,
-    current_user_id uuid
+    p_keyword_general text,
+    p_keyword_location text,
+    p_category_filter text[],
+    p_search_lat double precision,
+    p_search_lng double precision,
+    p_search_radius double precision,
+    p_sort_by text,
+    p_current_user_id uuid,
+    p_posted_by_user_id uuid,
+    p_liked_by_user_id uuid,
+    p_shop_id uuid -- Add shop ID parameter
 )
 RETURNS TABLE(
     id uuid,
@@ -65,8 +69,8 @@ BEGIN
         p.username::text,
         p.avatar_url::text,
         COALESCE(l.like_count, 0)::bigint as like_count,
-        CASE WHEN current_user_id IS NOT NULL THEN EXISTS (
-            SELECT 1 FROM likes WHERE likes.shop_id = s.id AND likes.user_id = current_user_id
+        CASE WHEN p_current_user_id IS NOT NULL THEN EXISTS (
+            SELECT 1 FROM likes WHERE likes.shop_id = s.id AND likes.user_id = p_current_user_id
         ) ELSE FALSE END::boolean as liked,
         s.rating::double precision,
         COALESCE(review_counts.count, 0)::bigint AS review_count,
@@ -82,9 +86,12 @@ BEGIN
     LEFT JOIN public.profiles p ON s.user_id = p.id
     LEFT JOIN (SELECT shop_id, count(*) as like_count FROM public.likes GROUP BY shop_id) l ON s.id = l.shop_id
     LEFT JOIN (SELECT shop_id, COUNT(*) as count FROM reviews GROUP BY shop_id) AS review_counts ON s.id = review_counts.shop_id
+    LEFT JOIN public.likes liked_filter_join ON p_liked_by_user_id IS NOT NULL AND s.id = liked_filter_join.shop_id
     WHERE
+        (p_shop_id IS NULL OR s.id = p_shop_id) -- Filter by shop ID
+    AND
         (
-            keyword IS NULL OR keyword = '' OR
+            p_keyword_general IS NULL OR p_keyword_general = '' OR
             (
                 s.name || ' ' ||
                 COALESCE(s.location, '') || ' ' ||
@@ -94,17 +101,21 @@ BEGIN
                 COALESCE(array_to_string(s.category, ' '), '') || ' ' ||
                 COALESCE(s.searchable_categories_text, '') || ' ' ||
                 COALESCE(s.nearest_station_name, '')
-            ) % keyword
+            ) % p_keyword_general
         )
     AND
-        (category_filter IS NULL OR category_filter = '{}' OR s.category && category_filter)
+        (p_category_filter IS NULL OR p_category_filter = '{}' OR s.category && p_category_filter)
     AND
-        (search_lat IS NULL OR search_lng IS NULL OR search_radius IS NULL OR ST_DWithin(ST_MakePoint(s.longitude, s.latitude)::geography, ST_MakePoint(search_lng, search_lat)::geography, search_radius))
+        (p_search_lat IS NULL OR p_search_lng IS NULL OR p_search_radius IS NULL OR ST_DWithin(ST_MakePoint(s.longitude, s.latitude)::geography, ST_MakePoint(p_search_lng, p_search_lat)::geography, p_search_radius))
+    AND
+        (p_posted_by_user_id IS NULL OR s.user_id = p_posted_by_user_id)
+    AND
+        (p_liked_by_user_id IS NULL OR liked_filter_join.user_id = p_liked_by_user_id)
     ORDER BY
-        CASE WHEN sort_by = 'likes.desc' THEN COALESCE(l.like_count, 0) END DESC NULLS LAST,
-        CASE WHEN sort_by = 'rating.desc' THEN s.rating END DESC NULLS LAST,
-        CASE WHEN sort_by = 'created_at.desc' THEN s.created_at END DESC NULLS LAST,
-        CASE WHEN sort_by = 'created_at.asc' THEN s.created_at END ASC NULLS LAST,
+        CASE WHEN p_sort_by = 'likes.desc' THEN COALESCE(l.like_count, 0) END DESC NULLS LAST,
+        CASE WHEN p_sort_by = 'rating.desc' THEN s.rating END DESC NULLS LAST,
+        CASE WHEN p_sort_by = 'created_at.desc' THEN s.created_at END DESC NULLS LAST,
+        CASE WHEN p_sort_by = 'created_at.asc' THEN s.created_at END ASC NULLS LAST,
         s.created_at DESC;
 END;
 $$;

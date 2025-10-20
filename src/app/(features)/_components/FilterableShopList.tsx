@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
-import ShopList from "@/app/(features)/_components/ShopList";
 import { Shop, SearchFilters } from "@/app/(features)/_lib/types";
 import { SearchControls } from "@/app/(features)/_components/SearchControls";
 import { useSearch } from "@/context/SearchContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useEffect, useMemo, useState } from "react";
+import ShopList from "./ShopList";
 
 // フィルターの初期状態 (for SearchControls)
 const defaultSearchControlsFilters: SearchFilters = {
@@ -27,6 +28,10 @@ interface FilterableShopListProps {
   headerKeywordGeneral?: string; // Changed
   isSearching?: boolean; // New prop for search loading state
   onSearchSubmit: (filters: SearchFilters) => void; // New prop to submit filters
+  onLikeToggle: (shopId: string, isLiked: boolean) => Promise<void>;
+  isLiking: boolean;
+  user: SupabaseUser | null;
+  onEdit?: (shopId: string) => void;
 }
 
 /**
@@ -45,6 +50,10 @@ export default function FilterableShopList({
   headerKeywordGeneral = "", // Changed
   isSearching = false, // Destructure isSearching with default
   onSearchSubmit, // Destructure new prop
+  onLikeToggle,
+  isLiking,
+  user,
+  onEdit,
 }: FilterableShopListProps) {
   // ステート変数の定義
   const { categoryFilter, setCategoryFilter, searchTerm, setSearchTerm } =
@@ -141,7 +150,7 @@ export default function FilterableShopList({
           ))}
         </div>
       ) : (
-        <ShopList shops={shopsToShow} onNavigate={onNavigate} />
+        <ShopList shops={shopsToShow} onNavigate={onNavigate} onLikeToggle={onLikeToggle} isLiking={isLiking} user={user} onEdit={onEdit} />
       )}
       {/* 「さらに表示」ボタン */}
       {!expanded && initialShops.length > shopsToShow.length && (

@@ -191,7 +191,7 @@ export default function ShopDetailPage() {
         if (mergedShopData.user_id) {
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
-            .select("username, avatar_url")
+            .select("id, username, avatar_url")
             .eq("id", mergedShopData.user_id)
             .single();
           if (profileError) {
@@ -237,6 +237,7 @@ export default function ShopDetailPage() {
                 .map((tag: string) => tag.trim())
             : [],
           user: {
+            id: profile?.id || mergedShopData.user_id!,
             username: profile?.username || "unknown_user",
             avatar_url:
               profile?.avatar_url || "https://i.pravatar.cc/64?u=unknown",
@@ -259,7 +260,10 @@ export default function ShopDetailPage() {
           walk_time_from_station: mergedShopData.walk_time_from_station ?? null,
           // New fields from API
           price_range: mergedShopData.price_range,
-          business_hours_weekly: mergedShopData.business_hours_weekly as unknown as BusinessHours[] | null,
+          business_hours_weekly:
+            mergedShopData.business_hours_weekly as unknown as
+              | BusinessHours[]
+              | null,
           phone_number: mergedShopData.phone_number,
           photo_url_api: mergedShopData.photo_url_api,
           api_last_updated: mergedShopData.api_last_updated,

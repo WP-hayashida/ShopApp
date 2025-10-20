@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Shop } from "../_lib/types";
-import { Heart, MapPin, Clock, Eye, Share2, Bookmark } from "lucide-react";
+import { Heart, MapPin, Clock, Eye, Share2, Bookmark, Edit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card"; // Adjusted path
 import { Button } from "@/components/ui/button"; // Adjusted path
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback"; // Adjusted path
 import { getCategoryConfig } from "@/components/CategoryConfig"; // Adjusted path
-import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js"; // Renamed to avoid conflict with our User interface
 import {
   Tooltip,
@@ -19,59 +18,22 @@ import {
 interface ShopCardProps {
   shop: Shop; // 表示するお店の情報
   onNavigate: (page: "detail", shop: Shop) => void; // Added for consistency with StoreCard, though we'll use Link
+  onLikeToggle: (shopId: string, isLiked: boolean) => Promise<void>;
+  isLiking: boolean;
+  user: SupabaseUser | null;
+  onEdit?: (shopId: string) => void;
 }
 
-const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
-  const supabase = createClient();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [isLiked, setIsLiked] = useState(shop.liked); // Initialize from shop.liked
-  const [likeCount, setLikeCount] = useState(shop.likes); // Initialize from shop.likes
-  const [loadingLike, setLoadingLike] = useState(false); // Set to false initially
+const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate, onLikeToggle, isLiking, user, onEdit }) => {
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user: supabaseUser },
-      } = await supabase.auth.getUser();
-      setUser(supabaseUser);
-    };
-    checkUser();
-  }, [supabase]);
-
-  const handleLikeToggle = async () => {
+  const handleLikeClick = () => {
     if (!user) {
       alert("いいねするにはログインしてください。");
       return;
     }
-
-    setLoadingLike(true);
-    if (isLiked) {
-      const { error } = await supabase
-        .from("likes")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("shop_id", shop.id);
-
-      if (error) {
-        console.error("Error unliking shop:", error);
-      } else {
-        setIsLiked(false);
-        setLikeCount((prev) => prev - 1);
-      }
-    } else {
-      const { error } = await supabase.from("likes").insert({
-        user_id: user.id,
-        shop_id: shop.id,
-      });
-
-      if (error) {
-        console.error("Error liking shop:", error);
-      } else {
-        setIsLiked(true);
-        setLikeCount((prev) => prev + 1);
-      }
+    if (!isLiking) {
+      onLikeToggle(shop.id, !shop.liked);
     }
-    setLoadingLike(false);
   };
 
   return (
@@ -166,15 +128,15 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
             <div className="flex items-center space-x-4">
               <button
                 className="flex items-center space-x-1 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => handleLikeToggle()} // Use existing handleLikeToggle
-                disabled={loadingLike}
+                onClick={handleLikeClick}
+                disabled={isLiking}
               >
                 <Heart
                   className={`size-4 ${
-                    isLiked ? "text-red-500 fill-red-500" : ""
+                    shop.liked ? "text-red-500 fill-red-500" : ""
                   }`}
                 />
-                <span className="text-sm">{likeCount}</span>
+                <span className="text-sm">{shop.likes}</span>
               </button>
 
               <div className="flex items-center space-x-1 text-muted-foreground">
@@ -184,6 +146,16 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onNavigate }) => {
             </div>
 
             <div className="flex items-center space-x-1">
+              {onEdit && user && user.id === shop.user.id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 hover:bg-muted/50"
+                  onClick={() => onEdit(shop.id)}
+                >
+                  <Edit className="size-4" />
+                </Button>
+              )}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
