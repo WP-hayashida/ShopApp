@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from "react"; // Added useRef
 import { Search, LogOut, Plus, UserRoundPlus, Menu, Store } from "lucide-react";
 import Link from "next/link";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { createClient } from "@/lib/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { useSearch } from "@/context/SearchContext";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +11,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
+} from "@/components/ui/dropdown-menu";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import { useSearch } from "@/context/SearchContext"; // Import useSearch hook
 
 export function Header() {
   const supabase = useMemo(() => createClient(), []);

@@ -5,8 +5,6 @@ import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Star } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandItem, CommandList } from "cmdk";
 import { Button } from "@/components/ui/button";
 import { APIProvider } from "@vis.gl/react-google-maps";
@@ -15,14 +13,13 @@ import { PhotoInput } from "@/app/(features)/_components/form/PhotoInput";
 import { UrlInput } from "@/app/(features)/_components/form/UrlInput";
 import { DetailedCategoryInput } from "@/app/(features)/_components/form/DetailedCategoryInput";
 import { CommentTextarea } from "@/app/(features)/_components/form/CommentTextarea";
-import { SubmitShopInfoDisplay } from "../_components/SubmitShopInfoDisplay";
+import { SubmitShopInfoDisplay } from "./_components/SubmitShopInfoDisplay";
 
 function ShopNewForm({ user }: { user: User }) {
   const {
     name,
     setName,
     addressInput,
-    setAddressInput,
     suggestions,
     photo,
     setPhoto,

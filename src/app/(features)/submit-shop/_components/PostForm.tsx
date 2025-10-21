@@ -1,23 +1,32 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "../../../../components/ui/use-toast";
 import { ArrowLeft, Upload, MapPin, Clock, Tag, Camera } from "lucide-react";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Badge } from "./ui/badge";
+import { Button } from "../../../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../components/ui/card";
+import { Input } from "../../../../components/ui/input";
+import { Label } from "../../../../components/ui/label";
+import { Textarea } from "../../../../components/ui/textarea";
+import { Badge } from "../../../../components/ui/badge";
 import Image from "next/image";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../../components/ui/popover";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "./ui/command";
-import { Checkbox } from "./ui/checkbox";
+} from "../../../../components/ui/command";
+import { Checkbox } from "../../../../components/ui/checkbox";
 
 import { categories } from "@/config/categories";
 

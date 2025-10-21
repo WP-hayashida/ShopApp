@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Shop } from "../_lib/types";
 import {
   Heart,
@@ -13,8 +13,8 @@ import { Card, CardContent } from "@/components/ui/card"; // Adjusted path
 import { Button } from "@/components/ui/button"; // Adjusted path
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ImageWithFallback } from "@/components/figma/ImageWithFallback"; // Adjusted path
-import { getCategoryConfig } from "@/components/CategoryConfig"; // Adjusted path
+import { ImageWithFallback } from "@/components/shared/ImageWithFallback"; // Adjusted path
+import { getCategoryConfig } from "@/config/categories"; // Adjusted path
 import type { User as SupabaseUser } from "@supabase/supabase-js"; // Renamed to avoid conflict with our User interface
 import {
   Tooltip,

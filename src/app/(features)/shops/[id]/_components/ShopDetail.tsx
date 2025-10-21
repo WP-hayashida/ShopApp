@@ -13,20 +13,24 @@ import {
   Phone,
   BadgeJapaneseYen,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
-import { Separator } from "./ui/separator";
-import { Textarea } from "./ui/textarea";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../../../components/ui/avatar";
+import { Badge } from "../../../../../components/ui/badge";
+import { Button } from "../../../../../components/ui/button";
+import { Card, CardContent } from "../../../../../components/ui/card";
+import { Separator } from "../../../../../components/ui/separator";
+import { Textarea } from "../../../../../components/ui/textarea";
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from "./ui/accordion"; // Added Accordion imports
+} from "../../../../../components/ui/accordion"; // Added Accordion imports
 import { Shop, BusinessHours } from "@/app/(features)/_lib/types"; // Added BusinessHours
-import { getCategoryConfig } from "./CategoryConfig";
+import { getCategoryConfig } from "@/config/categories";
 import { getTodayBusinessHoursStatus } from "@/app/(features)/_lib/shopUtils";
 
 interface StoreDetailProps {
@@ -35,7 +39,7 @@ interface StoreDetailProps {
   onLikeToggle: (shopId: string, newLikedStatus: boolean) => void; // Added onLikeToggle prop
 }
 
-export function StoreDetail({
+export function ShopDetail({
   store,
   onNavigate,
   onLikeToggle,
@@ -341,22 +345,36 @@ export function StoreDetail({
                               </AccordionTrigger>
                               <AccordionContent>
                                 {weeklyHoursArray.map((item, index) => {
-                                  const parts = item.day.split(': ');
+                                  const parts = item.day.split(": ");
                                   const day = parts[0];
                                   let time = parts[1];
 
-                                  if (time && time !== "休業日" && time !== "24時間営業") {
-                                    time = time.split(", ").map(range => {
-                                      const [start, end] = range.split("～");
-                                      if (start && end) {
-                                        const formatTime = (t: string) => {
-                                          const [h, m] = t.split("時").map(s => s.replace("分", ""));
-                                          return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
-                                        };
-                                        return `${formatTime(start)}～${formatTime(end)}`;
-                                      }
-                                      return range;
-                                    }).join(", ");
+                                  if (
+                                    time &&
+                                    time !== "休業日" &&
+                                    time !== "24時間営業"
+                                  ) {
+                                    time = time
+                                      .split(", ")
+                                      .map((range) => {
+                                        const [start, end] = range.split("～");
+                                        if (start && end) {
+                                          const formatTime = (t: string) => {
+                                            const [h, m] = t
+                                              .split("時")
+                                              .map((s) => s.replace("分", ""));
+                                            return `${h.padStart(
+                                              2,
+                                              "0"
+                                            )}:${m.padStart(2, "0")}`;
+                                          };
+                                          return `${formatTime(
+                                            start
+                                          )}～${formatTime(end)}`;
+                                        }
+                                        return range;
+                                      })
+                                      .join(", ");
                                   }
 
                                   return (

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ShopPayload } from "@/app/(features)/_lib/types";
+import { BusinessHours, ShopPayload } from "@/app/(features)/_lib/types";
+import { Json } from "@/lib/database.types";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -19,13 +20,13 @@ export async function POST(request: Request) {
   let longitude: number | null = null;
   let place_id: string | null = null;
   let formatted_address: string | null = null;
-  let business_hours_weekly: any = null; // Adjust type as needed
+  let business_hours_weekly: BusinessHours[] | null = null;
   let phone_number: string | null = null;
   let photo_url_api: string | null = null;
   let api_last_updated: string | null = null;
-  let nearest_station_name: string | null = null;
-  let nearest_station_place_id: string | null = null;
-  let walk_time_from_station: number | null = null;
+  const nearest_station_name: string | null = null;
+  const nearest_station_place_id: string | null = null;
+  const walk_time_from_station: number | null = null;
 
   if (formData.location) {
     console.log("Attempting to geocode location:", formData.location);
@@ -70,8 +71,17 @@ export async function POST(request: Request) {
         console.log("Place Details API response:", placeDetailsData);
 
         if (placeDetailsData.result) {
-          business_hours_weekly =
-            placeDetailsData.result.opening_hours?.weekday_text || null;
+          const weekdayText =
+            placeDetailsData.result.opening_hours?.weekday_text;
+          if (weekdayText && Array.isArray(weekdayText)) {
+            business_hours_weekly = weekdayText.map((text: string) => {
+              const parts = text.split(": ");
+              return {
+                day: parts[0],
+                time: parts.slice(1).join(": "),
+              };
+            });
+          }
           phone_number =
             placeDetailsData.result.international_phone_number || null;
           photo_url_api =
@@ -112,7 +122,7 @@ export async function POST(request: Request) {
     name: formData.name,
     photo_url: photo_url, // This will be the uploaded image URL or placeholder
     url: formData.url,
-    business_hours_weekly: business_hours_weekly,
+    business_hours_weekly: business_hours_weekly as unknown as Json,
     rating: null, // To be set by reviews
     location: formData.location, // Original text location
     category: formData.categories,

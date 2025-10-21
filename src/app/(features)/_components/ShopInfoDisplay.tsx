@@ -2,7 +2,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Star } from "lucide-react";
-import { Shop } from "@/app/(features)/_lib/types";
+import { BusinessHours, Shop } from "@/app/(features)/_lib/types";
 
 interface ShopInfoDisplayProps {
   shop: Partial<Shop>;
@@ -39,7 +39,7 @@ export const ShopInfoDisplay = ({ shop }: ShopInfoDisplayProps) => (
       {shop.business_hours_weekly && shop.business_hours_weekly.length > 0 ? (
         <div className="p-4 border rounded-md bg-muted/50 text-sm">
           <ul>
-            {shop.business_hours_weekly.map((item: any, index: number) => (
+            {shop.business_hours_weekly.map((item: BusinessHours, index: number) => (
               <li
                 key={index}
                 className="flex justify-between text-muted-foreground"

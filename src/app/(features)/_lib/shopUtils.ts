@@ -42,9 +42,7 @@ export const getTodayBusinessHoursStatus = (
   console.log("DEBUG: todayHoursEntry found:", todayHoursEntry);
 
   if (todayHoursEntry) {
-    const parts = todayHoursEntry.day.split(': ');
-    const dayName = parts[0];
-    const timeString = parts[1];
+    const timeString = todayHoursEntry.time;
 
     if (!timeString) {
       console.log("DEBUG: No time string found for today.");
@@ -65,13 +63,13 @@ export const getTodayBusinessHoursStatus = (
     // Process time ranges for today
     const timeRanges = timeString.split(", ");
     console.log("DEBUG: timeRanges:", timeRanges);
-    let openRanges: { start: number; end: number }[] = [];
+    const openRanges: { start: number; end: number }[] = [];
 
     for (const range of timeRanges) {
       const [startStr, endStr] = range.split("～");
       if (startStr && endStr) {
-        let start = getMinutes(startStr);
-        let end = getMinutes(endStr);
+        const start = getMinutes(startStr);
+        const end = getMinutes(endStr);
 
         if (end < start) {
           // Overnight handling

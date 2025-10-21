@@ -1,14 +1,7 @@
 import * as React from "react";
-import { ToastActionElement, ToastProps } from "./toast";
+import { ToastActionElement } from "./toast";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
-
-type ActionType =
-  | typeof ADD_TOAST
-  | typeof UPDATE_TOAST
-  | typeof DISMISS_TOAST
-  | typeof REMOVE_TOAST;
 
 type State = {
   toasts: Toast[];
@@ -20,11 +13,6 @@ enum ActionTypes {
   DISMISS_TOAST,
   REMOVE_TOAST,
 }
-
-const ADD_TOAST = "ADD_TOAST";
-const UPDATE_TOAST = "UPDATE_TOAST";
-const DISMISS_TOAST = "DISMISS_TOAST";
-const REMOVE_TOAST = "REMOVE_TOAST";
 
 let count = 0;
 

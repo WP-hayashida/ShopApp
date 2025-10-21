@@ -70,7 +70,7 @@ export const useShopDetails = (shopId: string) => {
           .eq("shop_id", shopId);
         if (error) throw error;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error toggling like:", error);
       // Revert optimistic update if there's an error
       setStore((prevStore) => {
@@ -81,7 +81,12 @@ export const useShopDetails = (shopId: string) => {
           liked: !newLikedStatus,
         };
       });
-      if (error.code === "23505") {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        (error as { code: unknown }).code === "23505"
+      ) {
         console.warn("User already liked this shop (duplicate key error).");
       }
     }

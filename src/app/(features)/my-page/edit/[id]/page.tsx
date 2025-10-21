@@ -8,7 +8,7 @@ import { UrlInput } from "@/app/(features)/_components/form/UrlInput";
 import { DetailedCategoryInput } from "@/app/(features)/_components/form/DetailedCategoryInput";
 import { CommentTextarea } from "@/app/(features)/_components/form/CommentTextarea";
 import { ShopInfoDisplay } from "@/app/(features)/_components/ShopInfoDisplay";
-import { DangerZone } from "@/app/(features)/_components/DangerZone";
+import { DangerZone } from "../../_components/DangerZone";
 import { ArrowLeft } from "lucide-react";
 import { useShopEditor } from "../_hooks/useShopEditor";
 

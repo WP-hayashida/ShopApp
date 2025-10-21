@@ -72,7 +72,7 @@ export const useShopEditor = (shopId: string) => {
     };
   }, [supabase, fetchUserAndShop, router]);
 
-  const handleFormChange = (field: keyof Shop, value: any) => {
+  const handleFormChange = (field: keyof Shop, value: Shop[keyof Shop]) => {
     setShop((prev) => ({ ...prev, [field]: value }));
   };
 

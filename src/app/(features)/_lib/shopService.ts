@@ -2,7 +2,6 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   Shop,
-  RpcShopReturnType,
   ShopSearchRpcArgs,
   SearchFilters,
   ShopPayload,
@@ -88,7 +87,7 @@ export const updateShop = async (
   id: string,
   updates: Partial<ShopPayload>,
   newPhoto: File | null
-): Promise<any> => {
+): Promise<Shop | null> => {
   const supabaseClient = getSupabase();
   const {
     data: { user },
@@ -125,14 +124,19 @@ export const updateShop = async (
     .from("shops")
     .update(finalUpdates)
     .eq("id", id)
-    .select()
+    .select("id") // Only select the id
     .single();
 
   if (error) {
     throw new Error(`Failed to update shop: ${error.message}`);
   }
 
-  return data;
+  if (!data) {
+    return null;
+  }
+
+  // Refetch the shop to get the full Shop object with all relations
+  return getShopById(data.id);
 };
 
 /**

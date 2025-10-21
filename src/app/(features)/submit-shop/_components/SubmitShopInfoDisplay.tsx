@@ -2,7 +2,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Star } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+
 
 interface BusinessHours {
   day: string;

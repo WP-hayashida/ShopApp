@@ -1,4 +1,4 @@
-import { Shop, User, RpcShopReturnType } from "./types";
+import { Shop, User, RpcShopReturnType, BusinessHours } from "./types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 // Supabaseから取得した生のショップデータの型定義
@@ -65,7 +65,7 @@ export const mapRpcShopToShop = (rpcShop: RpcShopReturnType): Shop => {
     walk_time_from_station: rpcShop.walk_time_from_station ?? null,
     price_range: rpcShop.price_range ?? undefined,
     business_hours_weekly: rpcShop.business_hours_weekly
-      ? (rpcShop.business_hours_weekly as any)
+      ? (rpcShop.business_hours_weekly as unknown as BusinessHours[])
       : null,
     phone_number: rpcShop.phone_number ?? undefined,
     photo_url_api: rpcShop.photo_url_api ?? undefined,

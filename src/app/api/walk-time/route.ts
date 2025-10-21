@@ -5,6 +5,22 @@ const PLACES_NEARBY_SEARCH_URL =
 const DIRECTIONS_API_URL =
   "https://maps.googleapis.com/maps/api/directions/json";
 
+// Define interfaces for the Google Places API response
+interface Place {
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  displayName: {
+    text: string;
+    languageCode: string;
+  };
+}
+
+interface NearbySearchResponse {
+  places: Place[];
+}
+
 /**
  * 最寄り駅とそこからの徒歩時間を計算するAPIルート
  * クライアントから店舗の緯度・経度を受け取り、Google Maps Platform APIを利用して最寄り駅を特定し、
@@ -68,7 +84,7 @@ export async function GET(request: Request) {
       cache: "no-store",
     });
 
-    const nearbySearchData = await nearbySearchResponse.json();
+    const nearbySearchData: NearbySearchResponse = await nearbySearchResponse.json();
 
     if (
       !nearbySearchResponse.ok ||
@@ -88,7 +104,7 @@ export async function GET(request: Request) {
     }
 
     // Find the closest station from the results by calculating distance
-    let closestStation: any = null;
+    let closestStation: Place | null = null;
     let minDistanceSq = Infinity;
 
     for (const place of nearbySearchData.places) {

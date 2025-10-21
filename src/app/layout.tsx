@@ -4,7 +4,7 @@ import { APIProvider } from "@vis.gl/react-google-maps";
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/Header";
+import { Header } from "@/components/shared/Header";
 import { SearchProvider } from "@/context/SearchContext"; // Import SearchProvider
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
