@@ -13,20 +13,25 @@ import {
   Phone,
   BadgeJapaneseYen,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
-import { Separator } from "./ui/separator";
-import { Textarea } from "./ui/textarea";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../../../components/ui/avatar";
+import { Badge } from "../../../../../components/ui/badge";
+import { Button } from "../../../../../components/ui/button";
+import { Card, CardContent } from "../../../../../components/ui/card";
+import { Separator } from "../../../../../components/ui/separator";
+import { Textarea } from "../../../../../components/ui/textarea";
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from "./ui/accordion"; // Added Accordion imports
+} from "../../../../../components/ui/accordion"; // Added Accordion imports
 import { Shop, BusinessHours } from "@/app/(features)/_lib/types"; // Added BusinessHours
-import { getCategoryConfig } from "./CategoryConfig";
+import { getCategoryConfig } from "@/config/categories";
+import { getTodayBusinessHoursStatus } from "@/app/(features)/_lib/shopUtils";
 
 interface StoreDetailProps {
   store: Shop;
@@ -34,59 +39,22 @@ interface StoreDetailProps {
   onLikeToggle: (shopId: string, newLikedStatus: boolean) => void; // Added onLikeToggle prop
 }
 
-export function StoreDetail({
+export function ShopDetail({
   store,
   onNavigate,
   onLikeToggle,
 }: StoreDetailProps) {
   const [isLiked, setIsLiked] = useState(store.liked);
   const [likesCount, setLikesCount] = useState(store.likes);
-  const getTodayHours = (hoursData: BusinessHours[]) => {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
-    const days = ["日", "月", "火", "水", "木", "金", "土"];
-    const todayDay = days[dayOfWeek];
-    return hoursData.find((item) => item.day === todayDay);
-  };
 
-  const getStatusAndColor = (hours: string) => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-
-    if (hours === "定休日") {
-      return { status: "定休日", color: "text-red-500" };
-    }
-
-    const [openTimeStr, closeTimeStr] = hours.split(" - ");
-    if (!openTimeStr || !closeTimeStr) {
-      return { status: "時間外", color: "text-muted-foreground" };
-    }
-
-    const [openHour, openMinute] = openTimeStr.split(":").map(Number);
-    const [closeHour, closeMinute] = closeTimeStr.split(":").map(Number);
-
-    const isOpen =
-      (currentHour > openHour ||
-        (currentHour === openHour && currentMinute >= openMinute)) &&
-      (currentHour < closeHour ||
-        (currentHour === closeHour && currentMinute < closeMinute));
-
-    return {
-      status: isOpen ? "営業時間内" : "時間外",
-      color: isOpen ? "text-green-500" : "text-muted-foreground",
-    };
-  };
+  const { displayTime, color } = getTodayBusinessHoursStatus(
+    store.business_hours_weekly
+  );
 
   const currentWeeklyHours = store.business_hours_weekly;
   const weeklyHoursArray: BusinessHours[] = Array.isArray(currentWeeklyHours)
     ? (currentWeeklyHours as unknown as BusinessHours[])
     : [];
-
-  const todayHours = getTodayHours(weeklyHoursArray);
-  const { color: todayColor } = todayHours
-    ? getStatusAndColor(todayHours.time) // Use todayHours.time
-    : { color: "text-muted-foreground" };
 
   const [comment, setComment] = useState("");
   const [comments] = useState([
@@ -227,7 +195,6 @@ export function StoreDetail({
             <div>
               <h1 className="text-3xl font-bold mb-2">{store.name}</h1>
               <div className="flex flex-wrap gap-1 items-center">
-                {" "}
                 {/* Added items-center */}
                 {store.category.map((cat, index) => {
                   const catConfig = getCategoryConfig(cat);
@@ -329,7 +296,7 @@ export function StoreDetail({
                         />
                         <span className="font-medium">
                           {store.rating?.toFixed(1) ?? "N/A"}
-                        </span>{" "}
+                        </span>
                         {/* Use store.rating */}
                       </div>
                       <span className="text-muted-foreground">
@@ -345,7 +312,7 @@ export function StoreDetail({
                           <Button variant="secondary" size="sm">
                             <MapPin size={16} className="mr-1" />
                             MAP
-                          </Button>{" "}
+                          </Button>
                         </a>
                       )}
                     </div>
@@ -364,15 +331,9 @@ export function StoreDetail({
                       <div className="flex items-start gap-2">
                         <Clock size={16} className="mt-1" />
                         <div>
-                          {todayHours ? (
-                            <div className={`font-medium ${todayColor}`}>
-                              今日 ({todayHours.day}): {todayHours.time}
-                            </div>
-                          ) : (
-                            <div className="text-muted-foreground">
-                              営業時間不明
-                            </div>
-                          )}
+                          <div className={`font-medium ${color}`}>
+                            {displayTime}
+                          </div>
                           <Accordion
                             type="single"
                             collapsible
@@ -383,28 +344,62 @@ export function StoreDetail({
                                 今週の営業時間を見る
                               </AccordionTrigger>
                               <AccordionContent>
-                                {weeklyHoursArray.map((item, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex justify-between text-sm py-0.5"
-                                  >
-                                    <span>{item.day}</span>
-                                    <span className="text-muted-foreground">
-                                      {item.time}
-                                    </span>
-                                  </div>
-                                ))}
+                                {weeklyHoursArray.map((item, index) => {
+                                  const parts = item.day.split(": ");
+                                  const day = parts[0];
+                                  let time = parts[1];
+
+                                  if (
+                                    time &&
+                                    time !== "休業日" &&
+                                    time !== "24時間営業"
+                                  ) {
+                                    time = time
+                                      .split(", ")
+                                      .map((range) => {
+                                        const [start, end] = range.split("～");
+                                        if (start && end) {
+                                          const formatTime = (t: string) => {
+                                            const [h, m] = t
+                                              .split("時")
+                                              .map((s) => s.replace("分", ""));
+                                            return `${h.padStart(
+                                              2,
+                                              "0"
+                                            )}:${m.padStart(2, "0")}`;
+                                          };
+                                          return `${formatTime(
+                                            start
+                                          )}～${formatTime(end)}`;
+                                        }
+                                        return range;
+                                      })
+                                      .join(", ");
+                                  }
+
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="flex justify-between text-sm py-0.5"
+                                    >
+                                      <span>{day}</span>
+                                      <span className="text-muted-foreground">
+                                        {time}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </AccordionContent>
                             </AccordionItem>
                           </Accordion>
                         </div>
-                      </div>{" "}
+                      </div>
                       {/* Corrected closing tag */}
                       {/* 電話番号 */}
                       {store.phone_number && (
                         <div className="flex items-center gap-2">
                           <Phone size={16} />
-                          <span>{store.phone_number}</span>{" "}
+                          <span>{store.phone_number}</span>
                           {/* Use store.phone_number */}
                         </div>
                       )}
@@ -412,7 +407,7 @@ export function StoreDetail({
                       {store.price_range && (
                         <div className="flex items-center gap-2">
                           <BadgeJapaneseYen size={16} />
-                          <span>{store.price_range}</span>{" "}
+                          <span>{store.price_range}</span>
                           {/* Use store.price_range */}
                         </div>
                       )}

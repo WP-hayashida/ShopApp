@@ -1,21 +1,32 @@
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useToast } from "../../../../components/ui/use-toast";
 import { ArrowLeft, Upload, MapPin, Clock, Tag, Camera } from "lucide-react";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Badge } from "./ui/badge";
+import { Button } from "../../../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../components/ui/card";
+import { Input } from "../../../../components/ui/input";
+import { Label } from "../../../../components/ui/label";
+import { Textarea } from "../../../../components/ui/textarea";
+import { Badge } from "../../../../components/ui/badge";
 import Image from "next/image";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../../components/ui/popover";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "./ui/command";
-import { Checkbox } from "./ui/checkbox";
+} from "../../../../components/ui/command";
+import { Checkbox } from "../../../../components/ui/checkbox";
 
 import { categories } from "@/config/categories";
 
@@ -24,6 +35,8 @@ interface PostFormProps {
 }
 
 export function PostForm({ onNavigate }: PostFormProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     categories: [] as string[], // Changed to categories (array)
@@ -36,6 +49,7 @@ export function PostForm({ onNavigate }: PostFormProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [newTag, setNewTag] = useState("");
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -74,11 +88,47 @@ export function PostForm({ onNavigate }: PostFormProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically submit the data to your backend
-    console.log("Submitting:", formData);
-    onNavigate("home");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/shops", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          selectedImage: selectedImage, // Pass base64 image data
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "お店を投稿しました！",
+          description: "新しいお店が正常に投稿されました。",
+        });
+        router.push("/shops"); // Navigate to shops list or home
+      } else {
+        toast({
+          title: "投稿に失敗しました",
+          description: result.error || "不明なエラーが発生しました。",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting shop:", error);
+      toast({
+        title: "エラー",
+        description: "お店の投稿中にエラーが発生しました。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -181,14 +231,14 @@ export function PostForm({ onNavigate }: PostFormProps) {
                   </PopoverContent>
                 </Popover>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.categories.map((category) => (
+                  {formData.categories.map((cat) => (
                     <Badge
-                      key={category}
+                      key={cat}
                       variant="secondary"
                       className="cursor-pointer"
-                      onClick={() => handleCategoryChange(category, false)}
+                      onClick={() => handleCategoryChange(cat, false)}
                     >
-                      {category} ×
+                      {cat} ×
                     </Badge>
                   ))}
                 </div>
@@ -371,8 +421,8 @@ export function PostForm({ onNavigate }: PostFormProps) {
             >
               キャンセル
             </Button>
-            <Button type="submit" className="flex-1">
-              投稿する
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? "投稿中..." : "投稿する"}
             </Button>
           </div>
         </form>

@@ -1,4 +1,4 @@
-import { Shop, User } from "./types";
+import { Shop, User, RpcShopReturnType, BusinessHours } from "./types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 // Supabaseから取得した生のショップデータの型定義
@@ -29,6 +29,51 @@ export interface RawSupabaseShop {
 }
 
 /**
+ * RPC関数の戻り値をShop型にマッピングする
+ * @param rpcShop - RPC関数`search_shops`から返されたショップデータ
+ * @returns アプリケーションのShop型オブジェクト
+ */
+export const mapRpcShopToShop = (rpcShop: RpcShopReturnType): Shop => {
+  return {
+    id: rpcShop.id,
+    name: rpcShop.name,
+    imageUrl: rpcShop.photo_url_api || rpcShop.photo_url || "/next.svg",
+    url: rpcShop.url || "",
+    hours: rpcShop.business_hours || "N/A",
+    location: rpcShop.location || "",
+    category: rpcShop.category || [],
+    detailed_category: rpcShop.detailed_category || "",
+    description: rpcShop.comments || "説明がありません。",
+    comments: rpcShop.comments,
+    tags: rpcShop.tags || [],
+    user: {
+      id: rpcShop.user_id!,
+      username: rpcShop.username || "unknown",
+      avatar_url: rpcShop.avatar_url || null,
+    },
+    likes: rpcShop.like_count || 0,
+    liked: rpcShop.liked || false,
+    rating: rpcShop.rating || 0,
+    reviewCount: rpcShop.review_count || 0,
+    searchable_categories_text: rpcShop.searchable_categories_text ?? null,
+    latitude: rpcShop.latitude ?? null,
+    longitude: rpcShop.longitude ?? null,
+    place_id: rpcShop.place_id ?? null,
+    formatted_address: rpcShop.formatted_address ?? null,
+    nearest_station_name: rpcShop.nearest_station_name ?? null,
+    nearest_station_place_id: rpcShop.nearest_station_place_id ?? null,
+    walk_time_from_station: rpcShop.walk_time_from_station ?? null,
+    price_range: rpcShop.price_range ?? undefined,
+    business_hours_weekly: rpcShop.business_hours_weekly
+      ? (rpcShop.business_hours_weekly as unknown as BusinessHours[])
+      : null,
+    phone_number: rpcShop.phone_number ?? undefined,
+    photo_url_api: rpcShop.photo_url_api ?? undefined,
+    api_last_updated: rpcShop.api_last_updated ?? undefined,
+  };
+};
+
+/**
  * Supabaseから取得した生のショップデータをアプリケーションのShop型にマッピングするヘルパー関数
  * @param rawShop - Supabaseから取得した生のショップデータ
  * @param supabase - Supabaseクライアントインスタンス
@@ -44,7 +89,7 @@ export async function mapSupabaseShopToShop(
   if (rawShop.user_id) {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .select("username, avatar_url")
+      .select("id, username, avatar_url")
       .eq("id", rawShop.user_id)
       .maybeSingle();
     if (profileError) {
@@ -84,6 +129,7 @@ export async function mapSupabaseShopToShop(
       ? rawShop.detailed_category.split(",").map((tag: string) => tag.trim())
       : [],
     user: {
+      id: ownerUser?.id || rawShop.user_id!,
       username: ownerUser?.username || "Unknown User",
       avatar_url:
         ownerUser?.avatar_url ||
