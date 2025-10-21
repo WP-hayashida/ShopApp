@@ -12,6 +12,7 @@ export interface BusinessHours {
  * ユーザー情報を表すインターフェース
  */
 export interface User {
+  id: string; // ユーザーID
   username: string; // ユーザー名
   avatar_url: string | null; // アバター画像のURL
 }
@@ -55,14 +56,52 @@ export interface Shop {
 /**
  * RPC関数 `search_shops` の引数の型
  */
+export interface RpcShopReturnType {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  url: string | null;
+  business_hours: string | null;
+  location: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  category: string[] | null;
+  detailed_category: string | null;
+  comments: string | null;
+  searchable_categories_text: string | null;
+  tags: string[] | null;
+  nearest_station_name: string | null;
+  walk_time_from_station: number | null;
+  created_at: string;
+  user_id: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  like_count: number;
+  liked: boolean;
+  rating: number | null;
+  review_count: number;
+  business_hours_weekly: Json | null;
+  price_range: string | null;
+  phone_number: string | null;
+  photo_url_api: string | null;
+  api_last_updated: string | null;
+  place_id: string | null;
+  formatted_address: string | null;
+  nearest_station_place_id: string | null;
+}
+
 export interface ShopSearchRpcArgs {
-  keyword: string;
-  category_filter: string[] | null;
-  search_lat: number | null;
-  search_lng: number | null;
-  search_radius: number | null;
-  sort_by: string;
-  current_user_id: string | null;
+  p_keyword_general: string | null;
+  p_keyword_location: string | null;
+  p_category_filter: string[] | null;
+  p_search_lat: number | null;
+  p_search_lng: number | null;
+  p_search_radius: number | null;
+  p_sort_by: string;
+  p_current_user_id: string | null;
+  p_posted_by_user_id?: string | null;
+  p_liked_by_user_id?: string | null;
+  p_shop_id?: string | null;
 }
 
 /**
@@ -96,8 +135,7 @@ export interface ShopPayload {
   category: string[] | null; // Supabaseでは配列
   detailed_category: string | null;
   comments: string | null;
-  // user_idはsupabase側で自動設定されるか、別途渡す
-  // --- Google Maps Platform 関連の追加フィールド ---
+  user_id: string; // user_idは必須
   latitude?: number | null;
   longitude?: number | null;
   place_id?: string | null;
@@ -105,18 +143,22 @@ export interface ShopPayload {
   nearest_station_name?: string | null;
   nearest_station_place_id?: string | null;
   walk_time_from_station?: number | null;
+  phone_number?: string | null;
+  photo_url_api?: string | null;
+  api_last_updated?: string | null;
+  price_range?: string | null;
 }
 
 /**
  * 検索フィルターの型定義
  */
 export interface SearchFilters {
-  keyword?: string; // キーワード検索（店名、詳細カテゴリ、コメント、検索用カテゴリテキスト、最寄り駅名が対象）
+  keyword_general?: string;
+  keyword_location?: string;
   search_lat?: number | null; // 周辺検索の中心緯度
   search_lng?: number | null; // 周辺検索の中心経度
   search_radius?: number | null; // 周辺検索の半径（メートル単位）。nullの場合は周辺検索を行わない
   location_text?: string; // UI表示用の場所テキスト（オートコンプリートの選択結果やフリーワード）
   category?: string[]; // カテゴリフィルター（複数選択可能）
-  sortBy?: string; // 並び順（例: 'created_at.desc', 'likes.desc'）
-  location?: string;
+  sortBy?: string; // 並び順（例: 'created_at.desc', 'likes.desc')
 }
