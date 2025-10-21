@@ -102,10 +102,27 @@ export function Header() {
     }
   };
 
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  const handleSearchToggle = () => {
+    setIsSearchExpanded((prev) => !prev);
+    if (!isSearchExpanded) {
+      // Optionally focus the input when it expands
+      // searchInputRef.current?.focus();
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Collapse search if empty and loses focus
+    if (!localSearchTerm) {
+      setIsSearchExpanded(false);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           {/* Logo */}
           <Link
             href="/"
@@ -124,35 +141,31 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Search Popover Trigger */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-auto mr-2 md:mr-0"
-              >
-                <Search className="size-6" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              side="left"
-              sideOffset={10}
-              className="w-fit p-0 border-none shadow-none bg-transparent"
-            >
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  placeholder="お店を検索..."
-                  className="pl-10 bg-white/90 border-border/60 focus:border-foreground/20 transition-colors"
-                  value={localSearchTerm}
-                  onChange={handleKeywordChange}
-                  onCompositionStart={handleCompositionStart}
-                  onCompositionEnd={handleCompositionEnd}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
+          {/* Search Input (Expanded) */}
+          {isSearchExpanded && (
+            <div className="relative flex-grow max-w-md">
+              <Input
+                placeholder="お店を検索..."
+                className="pl-3 bg-white/90 border-border/60 focus:border-foreground/20 transition-colors w-full"
+                value={localSearchTerm}
+                onChange={handleKeywordChange}
+                onCompositionStart={handleCompositionStart}
+                onCompositionEnd={handleCompositionEnd}
+                onBlur={handleInputBlur}
+                autoFocus
+              />
+            </div>
+          )}
+
+          {/* Search Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSearchToggle}
+            className={isSearchExpanded ? "" : "ml-auto"} // Push to right if not expanded
+          >
+            <Search className="size-6" />
+          </Button>
 
           {/* Actions for Desktop */}
           <div className="hidden md:flex items-center space-x-3">

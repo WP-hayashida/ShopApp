@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 import { PhotoInput } from "@/app/(features)/_components/form/PhotoInput";
@@ -9,6 +9,7 @@ import { DetailedCategoryInput } from "@/app/(features)/_components/form/Detaile
 import { CommentTextarea } from "@/app/(features)/_components/form/CommentTextarea";
 import { ShopInfoDisplay } from "@/app/(features)/_components/ShopInfoDisplay";
 import { DangerZone } from "@/app/(features)/_components/DangerZone";
+import { ArrowLeft } from "lucide-react";
 import { useShopEditor } from "../_hooks/useShopEditor";
 
 export default function EditShopPage() {
@@ -25,6 +26,8 @@ export default function EditShopPage() {
     handleSubmit,
     handleDelete,
   } = useShopEditor(shopId);
+
+  const router = useRouter(); // Import useRouter here
 
   if (loading) {
     return (
@@ -52,7 +55,12 @@ export default function EditShopPage() {
 
   return (
     <div className="container mx-auto max-w-2xl py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6">ショップを編集</h1>
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+        <h1 className="text-3xl font-bold ml-2">ショップを編集</h1>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <ShopInfoDisplay shop={shop} />
 

@@ -18,7 +18,7 @@ export const ShopInfoDisplay = ({ shop }: ShopInfoDisplayProps) => (
 
     {/* 場所 */}
     <div className="space-y-2">
-      <Label htmlFor="location">場所</Label>
+      <Label htmlFor="location">住所</Label>
       <Input id="location" value={shop.location || ""} disabled />
     </div>
 
@@ -40,7 +40,10 @@ export const ShopInfoDisplay = ({ shop }: ShopInfoDisplayProps) => (
         <div className="p-4 border rounded-md bg-muted/50 text-sm">
           <ul>
             {shop.business_hours_weekly.map((item: any, index: number) => (
-              <li key={index} className="flex justify-between">
+              <li
+                key={index}
+                className="flex justify-between text-muted-foreground"
+              >
                 <span>{item.day}</span>
                 <span>{item.time}</span>
               </li>
@@ -53,7 +56,6 @@ export const ShopInfoDisplay = ({ shop }: ShopInfoDisplayProps) => (
         </div>
       )}
     </div>
-
     {/* カテゴリ */}
     <div className="space-y-2">
       <Label htmlFor="category">カテゴリ</Label>

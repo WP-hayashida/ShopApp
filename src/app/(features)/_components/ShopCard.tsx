@@ -22,6 +22,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getTodayBusinessHoursStatus } from "../_lib/shopUtils";
 
 interface ShopCardProps {
   shop: Shop; // 表示するお店の情報
@@ -49,6 +50,10 @@ const ShopCard: React.FC<ShopCardProps> = ({
       onLikeToggle(shop.id, !shop.liked);
     }
   };
+
+  const { displayTime, color } = getTodayBusinessHoursStatus(
+    shop.business_hours_weekly
+  );
 
   return (
     <Card className="w-full overflow-hidden border bg-card hover:shadow-lg transition-all duration-300 group h-80 flex flex-col">
@@ -91,7 +96,7 @@ const ShopCard: React.FC<ShopCardProps> = ({
         {/* Content & Actions Wrapper */}
         <div className="p-4 flex flex-col flex-grow">
           {/* Store Info */}
-          <div className="space-y-2 flex-grow max-h-30 overflow-hidden">
+          <div className="space-y-2 flex-grow max-h-33 overflow-hidden">
             <h3
               className="font-semibold text-lg leading-tight cursor-pointer hover:text-foreground/80 transition-colors truncate"
               onClick={() => onNavigate("detail", shop)}
@@ -112,7 +117,7 @@ const ShopCard: React.FC<ShopCardProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="size-3" />
-                  <span className="truncate">{shop.hours}</span>
+                  <span className={`truncate ${color}`}>{displayTime}</span>
                 </div>
               </div>
               {shop.price_range && (

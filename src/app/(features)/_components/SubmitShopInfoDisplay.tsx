@@ -38,50 +38,41 @@ export const SubmitShopInfoDisplay = ({
       {/* Business Hours Display */}
       <div className="space-y-2">
         <Label>営業時間</Label>
-        {businessHours && businessHours.length > 0 ? (
-          <div className="p-4 border rounded-md bg-muted/50 text-sm">
-            <ul>
-              {businessHours.map((item, index) => (
-                <li key={index} className="flex justify-between">
-                  <span>{item.day}</span>
-                  <span>{item.time}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground p-4 border rounded-md">
-            店舗を検索すると営業時間が自動入力されます。
-          </div>
-        )}
+        <Input
+          id="businessHours"
+          value={
+            businessHours && businessHours.length > 0
+              ? businessHours
+                  .map((item) => `${item.day}: ${item.time}`)
+                  .join(", ")
+              : ""
+          }
+          disabled
+          placeholder="店舗を検索すると営業時間が自動入力されます"
+        />
       </div>
 
       {/* カテゴリ表示フィールド */}
       <div className="space-y-2">
         <Label>カテゴリ</Label>
-        <div className="flex flex-wrap gap-2">
-          {selectedCategories.length > 0 ? (
-            selectedCategories.map((category) => (
-              <Badge key={category} variant="secondary">
-                {category}
-              </Badge>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              店舗を検索するとカテゴリが自動入力されます。
-            </p>
-          )}
-        </div>
+        <Input
+          id="categories"
+          value={
+            selectedCategories.length > 0 ? selectedCategories.join(", ") : ""
+          }
+          disabled
+          placeholder="店舗を検索するとカテゴリが自動入力されます"
+        />
       </div>
 
       {/* 場所表示フィールド */}
       <div className="space-y-2">
-        <Label htmlFor="location">場所</Label>
+        <Label htmlFor="location">住所</Label>
         <Input
           id="location"
           value={locationText}
           disabled
-          placeholder="店舗を検索すると自動入力されます"
+          placeholder="店舗を検索すると住所が自動入力されます"
         />
       </div>
     </>
