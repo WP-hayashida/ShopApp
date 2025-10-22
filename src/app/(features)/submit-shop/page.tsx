@@ -1,8 +1,5 @@
-"use client";
-
 import { User } from "@supabase/supabase-js";
-import { useEffect, useState, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandItem, CommandList } from "cmdk";
@@ -14,26 +11,31 @@ import { UrlInput } from "@/app/(features)/_components/form/UrlInput";
 import { DetailedCategoryInput } from "@/app/(features)/_components/form/DetailedCategoryInput";
 import { CommentTextarea } from "@/app/(features)/_components/form/CommentTextarea";
 import { SubmitShopInfoDisplay } from "./_components/SubmitShopInfoDisplay";
+import { useAuth } from "@/context/AuthContext";
+import {
+  FormProvider,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form"; // Import form components
 
 function ShopNewForm({ user }: { user: User }) {
   const {
+    form,
     name,
-    setName,
     addressInput,
     suggestions,
     photo,
-    setPhoto,
     url,
-    setUrl,
     selectedCategories,
     detailedCategory,
-    setDetailedCategory,
     comments,
-    setComments,
     autoPhotoUrl,
     rating,
     businessHours,
-    loading,
+    isSubmitting,
     error,
     handleSuggestionSelect,
     handleSubmit,
@@ -42,89 +44,125 @@ function ShopNewForm({ user }: { user: User }) {
   return (
     <div className="container mx-auto max-w-2xl py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">新しいお店を投稿する</h1>
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* 店舗名入力フィールド */}
-        <div className="space-y-2 relative">
-          <Label htmlFor="name">店舗名</Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="例: 大砲ラーメン 本店"
-            autoComplete="off"
-            required
+      <FormProvider {...form}>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* 店舗名入力フィールド */}
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="relative">
+                <FormLabel>店舗名</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="例: 大砲ラーメン 本店"
+                    autoComplete="off"
+                    {...field}
+                  />
+                </FormControl>
+                {suggestions.length > 0 && ( // Display suggestions only if there are any
+                  <div className="absolute z-50 w-full">
+                    <Command className="bg-background border rounded-md mt-1 shadow-lg">
+                      <CommandList>
+                        <CommandEmpty>候補が見つかりません。</CommandEmpty>
+                        {suggestions.map((suggestion) => (
+                          <CommandItem
+                            key={suggestion.place_id}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onSelect={() => handleSuggestionSelect(suggestion)}
+                          >
+                            {suggestion.structured_formatting?.main_text}
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </div>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {suggestions.length > 0 && (
-            <div className="absolute z-50 w-full">
-              <Command className="bg-background border rounded-md mt-1 shadow-lg">
-                <CommandList>
-                  <CommandEmpty>候補が見つかりません。</CommandEmpty>
-                  {suggestions.map((suggestion) => (
-                    <CommandItem
-                      key={suggestion.place_id}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onSelect={() => handleSuggestionSelect(suggestion)}
-                    >
-                      {suggestion.structured_formatting?.main_text}
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </div>
-          )}
-        </div>
 
-        <SubmitShopInfoDisplay
-          rating={rating}
-          businessHours={businessHours}
-          selectedCategories={selectedCategories}
-          locationText={addressInput}
-        />
+          <SubmitShopInfoDisplay
+            rating={rating}
+            businessHours={businessHours}
+            selectedCategories={selectedCategories}
+            locationText={addressInput}
+          />
 
-        <PhotoInput
-          initialImageUrl={autoPhotoUrl}
-          photo={photo}
-          onPhotoChange={setPhoto}
-        />
+          <FormField
+            control={form.control}
+            name="photo"
+            render={({ field: { value, onChange, ...field } }) => (
+              <FormItem>
+                <FormLabel>写真</FormLabel>
+                <FormControl>
+                  <PhotoInput
+                    initialImageUrl={autoPhotoUrl}
+                    photo={value}
+                    onPhotoChange={onChange}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <UrlInput value={url} onChange={setUrl} />
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>URL</FormLabel>
+                <FormControl>
+                  <UrlInput {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <DetailedCategoryInput
-          value={detailedCategory}
-          onChange={setDetailedCategory}
-        />
+          <FormField
+            control={form.control}
+            name="detailedCategory"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>詳細カテゴリ</FormLabel>
+                <FormControl>
+                  <DetailedCategoryInput {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <CommentTextarea value={comments} onChange={setComments} />
+          <FormField
+            control={form.control}
+            name="comments"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>コメント</FormLabel>
+                <FormControl>
+                  <CommentTextarea {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "投稿中..." : "投稿する"}
-        </Button>
-      </form>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "投稿中..." : "投稿する"}
+          </Button>
+        </form>
+      </FormProvider>
     </div>
   );
 }
 
 export default function ShopNewPageWrapper() {
-  const supabase = useMemo(() => createClient(), []);
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-      setLoadingUser(false);
-    };
-    getUser();
-  }, [supabase.auth]);
-
-  const handleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
+  const { user, loading: loadingUser, signIn } = useAuth();
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey)
@@ -138,7 +176,7 @@ export default function ShopNewPageWrapper() {
       <div className="container mx-auto max-w-2xl py-10 px-4 text-center">
         <h1 className="text-3xl font-bold mb-4">新しいお店を投稿する</h1>
         <p>お店を投稿するにはサインインが必要です。</p>
-        <Button onClick={handleSignIn} className="mt-4">
+        <Button onClick={signIn} className="mt-4">
           Googleでサインイン
         </Button>
       </div>

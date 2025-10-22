@@ -7,19 +7,42 @@ import {
   deleteShop,
 } from "@/app/(features)/_lib/shopService";
 import { Shop, ShopPayload } from "@/app/(features)/_lib/types";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { useForm, SubmitHandler } from "react-hook-form";
+
+interface ShopFormValues {
+  name: string;
+  url: string;
+  detailed_category: string;
+  comments: string;
+  imageUrl: string | null;
+  photo: File | null;
+}
 
 export const useShopEditor = (shopId: string) => {
   const router = useRouter();
-  const supabase = createClient();
+  const { user, supabase } = useAuth();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [shop, setShop] = useState<Partial<Shop>>({});
-  const [photo, setPhoto] = useState<File | null>(null);
+  const form = useForm<ShopFormValues>({
+    defaultValues: {
+      name: "",
+      url: "",
+      detailed_category: "",
+      comments: "",
+      imageUrl: null,
+      photo: null,
+    },
+  });
+
+  const { watch, setValue, handleSubmit, formState: { isSubmitting } } = form;
+
+  const shop = watch(); // Watch all form values as the shop object
+  const photo = watch("photo");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUserAndShop = useCallback(
+  const fetchShopData = useCallback(
     async (userId: string) => {
       try {
         const shopData = await getShopById(shopId);
@@ -27,7 +50,12 @@ export const useShopEditor = (shopId: string) => {
           if (shopData.user.id !== userId) {
             setError("このショップを編集する権限がありません。");
           } else {
-            setShop(shopData);
+            // Set form values from fetched shopData
+            setValue("name", shopData.name);
+            setValue("url", shopData.url);
+            setValue("detailed_category", shopData.detailed_category);
+            setValue("comments", shopData.comments || "");
+            setValue("imageUrl", shopData.imageUrl);
           }
         } else {
           setError("ショップが見つかりません。");
@@ -39,47 +67,21 @@ export const useShopEditor = (shopId: string) => {
         setLoading(false);
       }
     },
-    [shopId]
+    [shopId, setValue]
   );
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          fetchUserAndShop(currentUser.id);
-        } else {
-          setLoading(false);
-          router.push("/auth/signin"); // Redirect if not logged in
-        }
-      }
-    );
+    if (!user) {
+      setLoading(false);
+      router.push("/auth/signin"); // Redirect if not logged in
+      return;
+    }
+    fetchShopData(user.id);
+  }, [user, fetchShopData, router]);
 
-    // Initial fetch
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUser(user);
-        fetchUserAndShop(user.id);
-      } else {
-        setLoading(false);
-        router.push("/auth/signin"); // Redirect if not logged in
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, fetchUserAndShop, router]);
-
-  const handleFormChange = (field: keyof Shop, value: Shop[keyof Shop]) => {
-    setShop((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!user || !shop) {
-      setError("データが不十分です。");
+  const onSubmit: SubmitHandler<ShopFormValues> = async (values) => {
+    if (!user) {
+      setError("ユーザーが認証されていません。");
       return;
     }
 
@@ -87,14 +89,30 @@ export const useShopEditor = (shopId: string) => {
     setError(null);
 
     try {
+      let finalPhotoUrl: string | null = values.imageUrl;
+      if (values.photo) {
+        const fileExt = values.photo.name.split(".").pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("shop-photos")
+          .upload(fileName, values.photo);
+        if (uploadError)
+          throw new Error(`写真のアップロードに失敗: ${uploadError.message}`);
+        const { data: publicUrlData } = supabase.storage
+          .from("shop-photos")
+          .getPublicUrl(uploadData.path);
+        finalPhotoUrl = publicUrlData.publicUrl;
+      }
+
       const updatePayload: Partial<ShopPayload> = {
-        url: shop.url || null,
-        comments: shop.comments || null,
-        detailed_category: shop.detailed_category || null,
-        photo_url: shop.imageUrl, // Use shop.imageUrl
+        name: values.name,
+        url: values.url || null,
+        comments: values.comments || null,
+        detailed_category: values.detailed_category || null,
+        photo_url: finalPhotoUrl, // Use finalPhotoUrl
       };
 
-      await updateShop(shopId, updatePayload, photo);
+      await updateShop(shopId, updatePayload, values.photo);
 
       alert("投稿が正常に更新されました。");
       router.push("/my-page");
@@ -143,14 +161,14 @@ export const useShopEditor = (shopId: string) => {
   };
 
   return {
-    user,
-    shop,
+    form,
+    shop: shop as Partial<Shop>, // Cast to Partial<Shop> for ShopInfoDisplay
     photo,
-    setPhoto,
+    setPhoto: (file: File | null) => setValue("photo", file),
     loading,
     error,
-    handleFormChange,
-    handleSubmit,
+    handleFormChange: (field: keyof ShopFormValues, value: ShopFormValues[keyof ShopFormValues]) => setValue(field, value),
+    handleSubmit: handleSubmit(onSubmit),
     handleDelete,
   };
 };

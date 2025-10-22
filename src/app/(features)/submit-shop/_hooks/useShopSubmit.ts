@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
 import { ShopPayload } from "@/app/(features)/_lib/types";
 import { googleTypeToJapaneseMap } from "@/lib/googleMapsTypes";
 import type { Json } from "@/lib/database.types";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { useAuth } from "@/context/AuthContext"; // Import useAuth
 
 interface AutocompletePrediction {
   description: string;
@@ -15,27 +16,61 @@ interface AutocompletePrediction {
   };
 }
 
+interface ShopFormValues {
+  name: string;
+  addressInput: string;
+  photo: File | null;
+  url: string;
+  selectedCategories: string[];
+  detailedCategory: string;
+  comments: string;
+  placeId: string | null;
+  autoPhotoUrl: string | null;
+  rating: number | null;
+  businessHours: { day: string; time: string }[] | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export const useShopSubmit = (user: User) => {
-  const supabase = useMemo(() => createClient(), []);
+  const { supabase } = useAuth(); // Use supabase from useAuth
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [addressInput, setAddressInput] = useState("");
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
+  const form = useForm<ShopFormValues>({
+    defaultValues: {
+      name: "",
+      addressInput: "",
+      photo: null,
+      url: "",
+      selectedCategories: [],
+      detailedCategory: "",
+      comments: "",
+      placeId: null,
+      autoPhotoUrl: null,
+      rating: null,
+      businessHours: null,
+      latitude: null,
+      longitude: null,
+    },
+  });
+
+  const { watch, setValue, handleSubmit, formState: { isSubmitting } } = form;
+
+  const name = watch("name");
+  const addressInput = watch("addressInput");
+  const photo = watch("photo");
+  const url = watch("url");
+  const selectedCategories = watch("selectedCategories");
+  const detailedCategory = watch("detailedCategory");
+  const comments = watch("comments");
+  const placeId = watch("placeId");
+  const autoPhotoUrl = watch("autoPhotoUrl");
+  const rating = watch("rating");
+  const businessHours = watch("businessHours");
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
+
   const [suggestions, setSuggestions] = useState<AutocompletePrediction[]>([]);
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [url, setUrl] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [detailedCategory, setDetailedCategory] = useState("");
-  const [comments, setComments] = useState("");
-  const [placeId, setPlaceId] = useState<string | null>(null);
-  const [autoPhotoUrl, setAutoPhotoUrl] = useState<string | null>(null);
-  const [rating, setRating] = useState<number | null>(null);
-  const [businessHours, setBusinessHours] = useState<
-    { day: string; time: string }[] | null
-  >(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,10 +91,10 @@ export const useShopSubmit = (user: User) => {
   }, [name]);
 
   const handleSuggestionSelect = async (suggestion: AutocompletePrediction) => {
-    setName(suggestion.structured_formatting.main_text);
-    setAddressInput(suggestion.structured_formatting.secondary_text);
+    setValue("name", suggestion.structured_formatting.main_text);
+    setValue("addressInput", suggestion.structured_formatting.secondary_text);
     setSuggestions([]);
-    setPlaceId(suggestion.place_id);
+    setValue("placeId", suggestion.place_id);
 
     try {
       const response = await fetch(
@@ -67,62 +102,60 @@ export const useShopSubmit = (user: User) => {
       );
       const data = await response.json();
       if (data) {
-        setName(data.name || suggestion.structured_formatting.main_text);
-        setLatitude(data.latitude || null);
-        setLongitude(data.longitude || null);
-        setAutoPhotoUrl(data.photo_url_api || null);
-        setRating(data.rating || null);
-        setBusinessHours(data.business_hours_weekly || null);
+        setValue("name", data.name || suggestion.structured_formatting.main_text);
+        setValue("latitude", data.latitude || null);
+        setValue("longitude", data.longitude || null);
+        setValue("autoPhotoUrl", data.photo_url_api || null);
+        setValue("rating", data.rating || null);
+        setValue("businessHours", data.business_hours_weekly || null);
         if (data.types && Array.isArray(data.types)) {
           const translatedCategories = data.types.map(
             (type: string) => googleTypeToJapaneseMap[type] || type
           );
-          setSelectedCategories(translatedCategories);
+          setValue("selectedCategories", translatedCategories);
         } else {
-          setSelectedCategories([]);
+          setValue("selectedCategories", []);
         }
       }
     } catch (err) {
       console.error("Place details fetch error:", err);
-      setName(suggestion.structured_formatting.main_text);
+      setValue("name", suggestion.structured_formatting.main_text);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
+  const onSubmit: SubmitHandler<ShopFormValues> = async (values) => {
     setError(null);
     try {
       let finalPhotoUrl: string | null = null;
-      if (photo) {
-        const fileExt = photo.name.split(".").pop();
+      if (values.photo) {
+        const fileExt = values.photo.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("shop-photos")
-          .upload(fileName, photo);
+          .upload(fileName, values.photo);
         if (uploadError)
           throw new Error(`写真のアップロードに失敗: ${uploadError.message}`);
         const { data: publicUrlData } = supabase.storage
           .from("shop-photos")
           .getPublicUrl(uploadData.path);
         finalPhotoUrl = publicUrlData.publicUrl;
-      } else if (autoPhotoUrl) {
-        finalPhotoUrl = autoPhotoUrl;
+      } else if (values.autoPhotoUrl) {
+        finalPhotoUrl = values.autoPhotoUrl;
       }
 
-      let finalLatitude = latitude;
-      let finalLongitude = longitude;
-      if ((!finalLatitude || !finalLongitude) && addressInput) {
+      let finalLatitude = values.latitude;
+      let finalLongitude = values.longitude;
+      if ((!finalLatitude || !finalLongitude) && values.addressInput) {
         try {
           const geocodeResponse = await fetch(
-            `/api/geocode?address=${encodeURIComponent(addressInput)}`
+            `/api/geocode?address=${encodeURIComponent(values.addressInput)}`
           );
           if (geocodeResponse.ok) {
             const geocodeData = await geocodeResponse.json();
             finalLatitude = geocodeData.latitude;
             finalLongitude = geocodeData.longitude;
             if (geocodeData.formatted_address) {
-              setAddressInput(geocodeData.formatted_address);
+              setValue("addressInput", geocodeData.formatted_address);
             }
           }
         } catch (geoError) {
@@ -148,21 +181,21 @@ export const useShopSubmit = (user: User) => {
       }
 
       const shopPayload: ShopPayload = {
-        name,
+        name: values.name,
         user_id: user.id,
         photo_url: finalPhotoUrl,
-        url: url || null,
-        business_hours_weekly: businessHours as unknown as Json,
-        rating: rating,
-        location: addressInput || null,
+        url: values.url || null,
+        business_hours_weekly: values.businessHours as unknown as Json,
+        rating: values.rating,
+        location: values.addressInput || null,
         latitude: finalLatitude,
         longitude: finalLongitude,
-        category: selectedCategories.length > 0 ? selectedCategories : null,
-        detailed_category: detailedCategory || null,
-        comments: comments || null,
+        category: values.selectedCategories.length > 0 ? values.selectedCategories : null,
+        detailed_category: values.detailedCategory || values.selectedCategories.join(","),
+        comments: values.comments || null,
         nearest_station_name: nearestStationName,
         walk_time_from_station: walkTimeFromStation,
-        place_id: placeId,
+        place_id: values.placeId,
       };
 
       const { error: insertError } = await supabase
@@ -177,32 +210,25 @@ export const useShopSubmit = (user: User) => {
       const message =
         err instanceof Error ? err.message : "投稿中にエラーが発生しました。";
       setError(message);
-    } finally {
-      setLoading(false);
     }
   };
 
   return {
+    form,
     name,
-    setName,
     addressInput,
-    setAddressInput,
     suggestions,
     photo,
-    setPhoto,
     url,
-    setUrl,
     selectedCategories,
     detailedCategory,
-    setDetailedCategory,
     comments,
-    setComments,
     autoPhotoUrl,
     rating,
     businessHours,
-    loading,
+    isSubmitting,
     error,
     handleSuggestionSelect,
-    handleSubmit,
+    handleSubmit: handleSubmit(onSubmit),
   };
 };
