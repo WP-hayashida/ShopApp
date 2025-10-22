@@ -42,9 +42,10 @@ export const getTodayBusinessHoursStatus = (
   console.log("DEBUG: todayHoursEntry found:", todayHoursEntry);
 
   if (todayHoursEntry) {
-    const timeString = todayHoursEntry.time;
+    const dayParts = todayHoursEntry.day.split(': ');
+    const timeString = dayParts.length > 1 ? dayParts[1] : todayHoursEntry.time;
 
-    if (!timeString) {
+    if (!timeString || timeString.trim() === '') {
       console.log("DEBUG: No time string found for today.");
       return defaultStatus;
     }
