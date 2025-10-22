@@ -54,6 +54,15 @@ export default function HomePage() {
     getInitialData();
   }, [appliedFilters, supabase.auth]);
 
+  // Listen for changes in context and update applied filters
+  useEffect(() => {
+    setAppliedFilters((prevFilters) => ({
+      ...prevFilters,
+      keyword_general: searchTerm,
+      category: categoryFilter,
+    }));
+  }, [searchTerm, categoryFilter]);
+
   const handleNavigate = (page: "detail", shop: Shop) => {
     if (page === "detail") {
       router.push(`/shops/${shop.id}`);

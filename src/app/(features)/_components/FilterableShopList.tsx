@@ -77,9 +77,6 @@ export default function FilterableShopList({
 
   // Function to handle search from SearchControls
   const handleSearchControlsSubmit = (filters: SearchFilters) => {
-    setSearchTerm(filters.keyword_general || ""); // Update searchTerm in context
-    // categoryFilter is already updated by SearchControls directly
-    // location and sortBy are handled by HomePageClient's useEffect
     onSearchSubmit(filters); // Submit all filters to HomePageClient
   };
 
@@ -96,11 +93,6 @@ export default function FilterableShopList({
     })();
 
     setCategoryFilter(newCategories);
-
-    onSearchSubmit({
-      ...searchControlsFilters,
-      category: newCategories,
-    });
   };
 
   // The filteredAndSortedShops logic is now handled server-side.
