@@ -44,9 +44,6 @@ export function ShopDetail({
   onNavigate,
   onLikeToggle,
 }: StoreDetailProps) {
-  const [isLiked, setIsLiked] = useState(store.liked);
-  const [likesCount, setLikesCount] = useState(store.likes);
-
   const { displayTime, color } = getTodayBusinessHoursStatus(
     store.business_hours_weekly
   );
@@ -144,10 +141,7 @@ export function ShopDetail({
   }, [store.latitude, store.longitude]);
 
   const handleLike = () => {
-    const newLikedStatus = !isLiked;
-    setIsLiked(newLikedStatus);
-    setLikesCount(newLikedStatus ? likesCount + 1 : likesCount - 1);
-    onLikeToggle(store.id, newLikedStatus); // Call the prop function
+    onLikeToggle(store.id, store.liked); // Pass the current liked status
   };
 
   const handleShare = () => {
@@ -257,13 +251,13 @@ export function ShopDetail({
                   size="sm"
                   onClick={handleLike}
                   className={`${
-                    isLiked
+                    store.liked
                       ? "bg-red-500/90 text-white hover:bg-red-600/90"
                       : ""
                   }`}
                 >
-                  <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                  {likesCount}
+                  <Heart size={16} fill={store.liked ? "currentColor" : "none"} />
+                  {store.likes}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={handleShare}>
                   <Share2 size={16} />

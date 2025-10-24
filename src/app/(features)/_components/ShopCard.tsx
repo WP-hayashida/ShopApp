@@ -46,9 +46,7 @@ const ShopCard: React.FC<ShopCardProps> = ({
       alert("いいねするにはログインしてください。");
       return;
     }
-    if (!isLiking) {
-      onLikeToggle(shop.id, !shop.liked);
-    }
+    onLikeToggle(shop.id, shop.liked);
   };
 
   const { displayTime, color } = getTodayBusinessHoursStatus(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react"; // Added useRef
+import React, { useState, useEffect, useRef } from "react"; // Added useRef
 import { Search, LogOut, Plus, UserRoundPlus, Menu, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
@@ -12,14 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuth } from "@/context/AuthContext"; // Import useAuth hook
 import { useSearch } from "@/context/SearchContext"; // Import useSearch hook
 
 export function Header() {
-  const supabase = useMemo(() => createClient(), []);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, signIn, signOut } = useAuth();
   const { setSearchTerm } = useSearch(); // Use searchTerm from context
   const [localSearchTerm, setLocalSearchTerm] = useState(""); // Local state for input value
   const [isComposing, setIsComposing] = useState(false); // State to track IME composition
@@ -56,46 +53,13 @@ export function Header() {
   };
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user: supabaseUser },
-      } = await supabase.auth.getUser();
-      setUser(supabaseUser);
-      setLoading(false);
-    };
-
-    getUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
     return () => {
-      authListener.subscription.unsubscribe();
       if (debounceTimeoutRef.current) {
         // Clear debounce on unmount
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [supabase, debounceTimeoutRef]); // Add debounceTimeoutRef to dependencies
-
-  const handleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-  };
-
-  const handleSignOut = async () => {
-    if (window.confirm("本当にサインアウトしますか？")) {
-      await supabase.auth.signOut();
-      window.location.reload();
-    }
-  };
+  }, [debounceTimeoutRef]); // Add debounceTimeoutRef to dependencies
 
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
@@ -210,14 +174,14 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link href="/my-page">My Page</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleSignOut}>
+                    <DropdownMenuItem onClick={signOut}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Log out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={handleSignIn} variant="outline">
+                <Button onClick={signIn} variant="outline">
                   <UserRoundPlus className="mr-2 h-4 w-4" />
                   Sign In
                 </Button>
@@ -268,7 +232,7 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSignOut}>
+                      <DropdownMenuItem onClick={signOut}>
                         <LogOut className="mr-2 h-4 w-4" />
                         Log out
                       </DropdownMenuItem>
@@ -283,7 +247,7 @@ export function Header() {
                           お店一覧
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleSignIn}>
+                      <DropdownMenuItem onClick={signIn}>
                         <UserRoundPlus className="mr-2 h-4 w-4" />
                         Sign In
                       </DropdownMenuItem>

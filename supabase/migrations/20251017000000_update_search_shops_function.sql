@@ -93,15 +93,20 @@ BEGIN
         (
             p_keyword_general IS NULL OR p_keyword_general = '' OR
             (
-                s.name || ' ' ||
-                COALESCE(s.location, '') || ' ' ||
-                COALESCE(s.formatted_address, '') || ' ' ||
-                COALESCE(s.comments, '') || ' ' ||
-                COALESCE(s.detailed_category, '') || ' ' ||
-                COALESCE(array_to_string(s.category, ' '), '') || ' ' ||
-                COALESCE(s.searchable_categories_text, '') || ' ' ||
-                COALESCE(s.nearest_station_name, '')
-            ) % p_keyword_general
+                SELECT bool_and(
+                    (
+                        s.name || ' ' ||
+                        COALESCE(s.location, '') || ' ' ||
+                        COALESCE(s.formatted_address, '') || ' ' ||
+                        COALESCE(s.comments, '') || ' ' ||
+                        COALESCE(s.detailed_category, '') || ' ' ||
+                        COALESCE(array_to_string(s.category, ' '), '') || ' ' ||
+                        COALESCE(s.searchable_categories_text, '') || ' ' ||
+                        COALESCE(s.nearest_station_name, '')
+                    ) ILIKE '%' || word || '%'
+                )
+                FROM unnest(string_to_array(p_keyword_general, ' ')) as word
+            )
         )
     AND
         (p_category_filter IS NULL OR p_category_filter = '{}' OR s.category && p_category_filter)

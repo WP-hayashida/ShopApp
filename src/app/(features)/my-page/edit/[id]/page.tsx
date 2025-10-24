@@ -11,23 +11,23 @@ import { ShopInfoDisplay } from "@/app/(features)/_components/ShopInfoDisplay";
 import { DangerZone } from "../../_components/DangerZone";
 import { ArrowLeft } from "lucide-react";
 import { useShopEditor } from "../_hooks/useShopEditor";
+import { FormProvider, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"; // Import form components
+import { Input } from "@/components/ui/input"; // Import Input for name field
 
 export default function EditShopPage() {
   const params = useParams();
   const shopId = params.id as string;
 
   const {
+    form,
     shop,
-    photo,
-    setPhoto,
     loading,
     error,
-    handleFormChange,
-    handleSubmit,
     handleDelete,
+    handleSubmit,
   } = useShopEditor(shopId);
 
-  const router = useRouter(); // Import useRouter here
+  const router = useRouter();
 
   if (loading) {
     return (
@@ -61,36 +61,94 @@ export default function EditShopPage() {
         </Button>
         <h1 className="text-3xl font-bold ml-2">ショップを編集</h1>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <ShopInfoDisplay shop={shop} />
+      <FormProvider {...form}>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ShopInfoDisplay is not a form field, so it remains as is */}
+          <ShopInfoDisplay shop={shop} />
 
-        <PhotoInput
-          initialImageUrl={shop.imageUrl || null}
-          photo={photo}
-          onPhotoChange={setPhoto}
-        />
+          {/* Name field - added for completeness, assuming it should be editable */}
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>店舗名</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <UrlInput
-          value={shop.url || ""}
-          onChange={(value) => handleFormChange("url", value)}
-        />
+          <FormField
+            control={form.control}
+            name="photo"
+            render={({ field: { value, onChange, ...field } }) => (
+              <FormItem>
+                <FormLabel>写真</FormLabel>
+                <FormControl>
+                  <PhotoInput
+                    initialImageUrl={shop.imageUrl || null}
+                    photo={value}
+                    onPhotoChange={onChange}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <DetailedCategoryInput
-          value={shop.detailed_category || ""}
-          onChange={(value) => handleFormChange("detailed_category", value)}
-        />
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>URL</FormLabel>
+                <FormControl>
+                  <UrlInput {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <CommentTextarea
-          value={shop.comments || ""}
-          onChange={(value) => handleFormChange("comments", value)}
-        />
+          <FormField
+            control={form.control}
+            name="detailed_category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>詳細カテゴリ</FormLabel>
+                <FormControl>
+                  <DetailedCategoryInput {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+          <FormField
+            control={form.control}
+            name="comments"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>コメント</FormLabel>
+                <FormControl>
+                  <CommentTextarea {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "更新中..." : "更新する"}
-        </Button>
-      </form>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? "更新中..." : "更新する"}
+          </Button>
+        </form>
+      </FormProvider>
 
       <DangerZone onDelete={handleDelete} loading={loading} />
     </div>

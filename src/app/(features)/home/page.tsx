@@ -5,24 +5,23 @@ import { SearchFilters, Shop } from "../_lib/types";
 import { searchShops } from "../_lib/shopService";
 import { useRouter } from "next/navigation";
 import { useSearch } from "@/context/SearchContext";
+import { useAuth } from "@/context/AuthContext";
+import { useLikeShop } from "../_hooks/useLikeShop"; // Import useLikeShop
 import FilterableShopList from "../_components/FilterableShopList";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
 
 /**
  * ホームページのクライアントサイドコンポーネント
  * 店舗リストの表示、検索フィルターの管理、Supabaseからのデータ取得を統括する
  */
 export default function HomePage() {
-  const supabase = createClient();
+  const { user, loading: authLoading } = useAuth();
+  const { isLiking, handleLikeToggle } = useLikeShop(); // Use useLikeShop hook
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLiking, setIsLiking] = useState(false);
   const router = useRouter();
 
-  const { searchTerm, categoryFilter } = useSearch();
+  const { searchTerm, categoryFilter, shopListRefreshKey } = useSearch();
   const [appliedFilters, setAppliedFilters] = useState<SearchFilters>({
     keyword_general: searchTerm,
     keyword_location: "",
@@ -39,11 +38,6 @@ export default function HomePage() {
       setIsSearching(true);
       setLoading(true);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-
       const shopsData = await searchShops(appliedFilters);
       setShops(shopsData);
 
@@ -51,8 +45,19 @@ export default function HomePage() {
       setIsSearching(false);
     };
 
-    getInitialData();
-  }, [appliedFilters, supabase.auth]);
+    if (!authLoading) {
+      getInitialData();
+    }
+  }, [appliedFilters, authLoading, shopListRefreshKey]);
+
+  // Listen for changes in context and update applied filters
+  useEffect(() => {
+    setAppliedFilters((prevFilters) => ({
+      ...prevFilters,
+      keyword_general: searchTerm,
+      category: categoryFilter,
+    }));
+  }, [searchTerm, categoryFilter]);
 
   const handleNavigate = (page: "detail", shop: Shop) => {
     if (page === "detail") {
@@ -60,43 +65,21 @@ export default function HomePage() {
     }
   };
 
-  const handleLikeToggle = async (shopId: string, newLikedStatus: boolean) => {
-    if (!user) return;
-    setIsLiking(true);
-
-    try {
-      if (newLikedStatus) {
-        const { error } = await supabase.from("likes").insert({
-          user_id: user.id,
-          shop_id: shopId,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("shop_id", shopId);
-        if (error) throw error;
-      }
-
+  const handleLikeToggleForList = async (shopId: string, isLiked: boolean) => {
+    await handleLikeToggle(shopId, isLiked, (updatedShop) => {
       setShops((prevShops) =>
         prevShops.map((s) => {
-          if (s.id === shopId) {
+          if (s.id === updatedShop.id) {
             return {
               ...s,
-              liked: newLikedStatus,
-              likes: s.likes + (newLikedStatus ? 1 : -1),
+              liked: updatedShop.liked,
+              likes: s.likes + (updatedShop.liked ? 1 : -1),
             };
           }
           return s;
         })
       );
-    } catch (error) {
-      console.error("Error toggling like:", error);
-    } finally {
-      setIsLiking(false);
-    }
+    });
   };
 
   const availableCategories = useMemo(() => {
@@ -112,7 +95,7 @@ export default function HomePage() {
     return ["すべて", ...Array.from(categories)];
   }, [shops]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <main className="flex flex-col items-center p-4 md:p-8 lg:p-12">
         <div className="w-full flex justify-end mb-4">
@@ -141,7 +124,7 @@ export default function HomePage() {
         headerKeywordGeneral={appliedFilters.keyword_general}
         isSearching={isSearching}
         onSearchSubmit={setAppliedFilters}
-        onLikeToggle={handleLikeToggle}
+        onLikeToggle={handleLikeToggleForList} // Use the new handler
         isLiking={isLiking}
         user={user}
       />

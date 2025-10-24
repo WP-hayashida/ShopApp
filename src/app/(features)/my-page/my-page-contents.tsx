@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import React, { useEffect, useState, useCallback } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Shop, SearchFilters } from "@/app/(features)/_lib/types";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getShopsByUserId, getLikedShopsByUserId } from "../_lib/shopService";
 import { upsertUserProfile, Profile } from "../_lib/userService";
+import { useAuth } from "@/context/AuthContext";
+import { useLikeShop } from "@/app/(features)/_hooks/useLikeShop"; // Import useLikeShop
 
 // デフォルトの検索フィルター
 const defaultSearchFilters: SearchFilters = {
@@ -25,24 +26,22 @@ const defaultSearchFilters: SearchFilters = {
 export default function MyPageContents() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = useMemo(() => createClient(), []);
+  const { user, loading: authLoading, signIn } = useAuth();
+  const { isLiking, handleLikeToggle } = useLikeShop(); // Use useLikeShop hook
 
-  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [shops, setShops] = useState<Shop[]>([]);
   const [likedShops, setLikedShops] = useState<Shop[]>([]);
-  const [currentFilters, setCurrentFilters] =
-    useState<SearchFilters>(defaultSearchFilters);
-  const [isLiking, setIsLiking] = useState(false);
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>(defaultSearchFilters);
 
   const fetchUserData = useCallback(
-    async (user: User, filters: SearchFilters) => {
+    async (currentUser: User, filters: SearchFilters) => {
       setLoading(true);
       const [userProfile, userShops, userLikedShops] = await Promise.all([
-        upsertUserProfile(user),
-        getShopsByUserId(user.id, filters),
-        getLikedShopsByUserId(user.id, filters),
+        upsertUserProfile(currentUser),
+        getShopsByUserId(currentUser.id, filters),
+        getLikedShopsByUserId(currentUser.id, filters),
       ]);
 
       setProfile(userProfile);
@@ -50,100 +49,52 @@ export default function MyPageContents() {
       setLikedShops(userLikedShops);
       setLoading(false);
     },
-    []
+    [] // Remove supabase from dependencies
   );
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        const sessionUser = session?.user ?? null;
-        setUser(sessionUser);
-        if (sessionUser) {
-          fetchUserData(sessionUser, currentFilters);
-        } else {
-          setProfile(null);
-          setShops([]);
-          setLikedShops([]);
-          setLoading(false);
-        }
-      }
-    );
-
-    // 初回ロード時にユーザー情報を取得
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!authLoading) {
       if (user) {
-        setUser(user);
         fetchUserData(user, currentFilters);
       } else {
+        setProfile(null);
+        setShops([]);
+        setLikedShops([]);
         setLoading(false);
       }
-    });
+    }
+  }, [user, authLoading, currentFilters, fetchUserData]);
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, currentFilters, fetchUserData]);
-
-  const handleLikeToggle = async (shopId: string, newLikedStatus: boolean) => {
-    if (!user) return;
-    setIsLiking(true);
-
-    try {
-      if (newLikedStatus) {
-        const { error } = await supabase.from("likes").insert({
-          user_id: user.id,
-          shop_id: shopId,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("shop_id", shopId);
-        if (error) throw error;
-      }
-
-      const updateShopState = (shops: Shop[]) =>
-        shops.map((s) => {
-          if (s.id === shopId) {
+  const handleLikeToggleForMyPage = async (shopId: string, initialLikedStatus: boolean) => {
+    await handleLikeToggle(shopId, initialLikedStatus, (updatedShop) => {
+      // Update shops list
+      setShops((prevShops) =>
+        prevShops.map((s) => {
+          if (s.id === updatedShop.id) {
             return {
               ...s,
-              liked: newLikedStatus,
-              likes: s.likes + (newLikedStatus ? 1 : -1),
+              liked: updatedShop.liked,
+              likes: s.likes + (updatedShop.liked ? 1 : -1),
             };
           }
           return s;
-        });
+        })
+      );
 
-      setShops(updateShopState);
-
-      if (newLikedStatus) {
-        const likedShop = shops.find((s) => s.id === shopId);
-        if (likedShop && !likedShops.some((s) => s.id === shopId)) {
-          setLikedShops((prev) => [
-            ...prev,
-            { ...likedShop, liked: true, likes: likedShop.likes + 1 },
-          ]);
+      // Update likedShops list
+      setLikedShops((prevLikedShops) => {
+        if (updatedShop.liked) {
+          // If liked, add to likedShops if not already there
+          const shopToAdd = shops.find((s) => s.id === updatedShop.id);
+          if (shopToAdd && !prevLikedShops.some((s) => s.id === updatedShop.id)) {
+            return [...prevLikedShops, { ...shopToAdd, liked: true, likes: shopToAdd.likes + 1 }];
+          }
         } else {
-          setLikedShops(updateShopState);
+          // If unliked, remove from likedShops
+          return prevLikedShops.filter((s) => s.id !== updatedShop.id);
         }
-      } else {
-        setLikedShops((prev) => prev.filter((s) => s.id !== shopId));
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
-    } finally {
-      setIsLiking(false);
-    }
-  };
-
-  const handleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+        return prevLikedShops; // No change if not found or already there
+      });
     });
   };
 
@@ -157,7 +108,7 @@ export default function MyPageContents() {
     router.push(`/shops/${shop.id}?fromTab=${activeTab}`);
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="container mx-auto max-w-4xl py-10 text-center">
         <p>読み込み中...</p>
@@ -170,7 +121,7 @@ export default function MyPageContents() {
       <div className="container mx-auto max-w-4xl py-10 text-center">
         <h1 className="text-3xl font-bold mb-4">マイページ</h1>
         <p>このページを表示するにはサインインが必要です。</p>
-        <Button onClick={handleSignIn} className="mt-4">
+        <Button onClick={signIn} className="mt-4">
           Googleでサインイン
         </Button>
       </div>
@@ -212,7 +163,7 @@ export default function MyPageContents() {
                 availableCategories={[]}
                 onNavigate={(page, shop) => handleNavigateToShopDetail(shop)}
                 onSearchSubmit={handleSearchSubmit}
-                onLikeToggle={handleLikeToggle}
+                onLikeToggle={handleLikeToggleForMyPage} // Use the new handler
                 isLiking={isLiking}
                 user={user}
                 onEdit={(shopId) => router.push(`/my-page/edit/${shopId}`)}
@@ -231,7 +182,7 @@ export default function MyPageContents() {
                 availableCategories={[]}
                 onNavigate={(page, shop) => handleNavigateToShopDetail(shop)}
                 onSearchSubmit={handleSearchSubmit}
-                onLikeToggle={handleLikeToggle}
+                onLikeToggle={handleLikeToggleForMyPage} // Use the new handler
                 isLiking={isLiking}
                 user={user}
               />
