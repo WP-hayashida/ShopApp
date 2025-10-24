@@ -21,7 +21,6 @@ export default function EditShopPage() {
   const {
     form,
     shop,
-    photo,
     loading,
     error,
     handleDelete,

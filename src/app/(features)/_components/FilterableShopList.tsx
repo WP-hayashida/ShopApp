@@ -56,7 +56,7 @@ export default function FilterableShopList({
   onEdit,
 }: FilterableShopListProps) {
   // ステート変数の定義
-  const { categoryFilter, setCategoryFilter, searchTerm, setSearchTerm } =
+  const { categoryFilter, setCategoryFilter, searchTerm } =
     useSearch(); // Use SearchContext
   const [searchControlsFilters, setSearchControlsFilters] =
     useState<SearchFilters>({

@@ -1,6 +1,7 @@
+// Force re-compilation
+"use client";
+
 import { User } from "@supabase/supabase-js";
-import { useState, useMemo } from "react";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandItem, CommandList } from "cmdk";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,9 @@ import {
 function ShopNewForm({ user }: { user: User }) {
   const {
     form,
-    name,
     addressInput,
     suggestions,
-    photo,
-    url,
     selectedCategories,
-    detailedCategory,
-    comments,
     autoPhotoUrl,
     rating,
     businessHours,

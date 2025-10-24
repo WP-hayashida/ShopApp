@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
@@ -63,12 +65,9 @@ export const useShopSubmit = (user: User) => {
   const selectedCategories = watch("selectedCategories");
   const detailedCategory = watch("detailedCategory");
   const comments = watch("comments");
-  const placeId = watch("placeId");
   const autoPhotoUrl = watch("autoPhotoUrl");
   const rating = watch("rating");
   const businessHours = watch("businessHours");
-  const latitude = watch("latitude");
-  const longitude = watch("longitude");
 
   const [suggestions, setSuggestions] = useState<AutocompletePrediction[]>([]);
   const [error, setError] = useState<string | null>(null);

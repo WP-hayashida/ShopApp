@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+"use client";
+
+import React, { useEffect, useState, useCallback } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Shop, SearchFilters } from "@/app/(features)/_lib/types";
 import { Button } from "@/components/ui/button";
@@ -24,7 +26,7 @@ const defaultSearchFilters: SearchFilters = {
 export default function MyPageContents() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading, supabase, signIn } = useAuth();
+  const { user, loading: authLoading, signIn } = useAuth();
   const { isLiking, handleLikeToggle } = useLikeShop(); // Use useLikeShop hook
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -47,7 +49,7 @@ export default function MyPageContents() {
       setLikedShops(userLikedShops);
       setLoading(false);
     },
-    [supabase] // Add supabase to dependencies
+    [] // Remove supabase from dependencies
   );
 
   useEffect(() => {

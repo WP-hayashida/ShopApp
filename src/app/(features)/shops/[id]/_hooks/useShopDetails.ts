@@ -7,8 +7,8 @@ import { useLikeShop } from "@/app/(features)/_hooks/useLikeShop"; // Import use
 import { useSearch } from "@/context/SearchContext"; // Import useSearch
 
 export const useShopDetails = (shopId: string) => {
-  const { user, supabase } = useAuth();
-  const { isLiking, handleLikeToggle } = useLikeShop(); // Use useLikeShop hook
+  const { user } = useAuth();
+  const { handleLikeToggle } = useLikeShop(); // Use useLikeShop hook
   const router = useRouter();
   const { triggerShopListRefresh } = useSearch(); // Use triggerShopListRefresh
 
@@ -33,7 +33,7 @@ export const useShopDetails = (shopId: string) => {
         setLoading(false);
       }
     },
-    [shopId, supabase.auth]
+    [shopId] // Remove supabase.auth from dependencies
   );
 
   useEffect(() => {

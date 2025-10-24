@@ -14,7 +14,7 @@ import FilterableShopList from "../_components/FilterableShopList";
  * 店舗リストの表示、検索フィルターの管理、Supabaseからのデータ取得を統括する
  */
 export default function HomePage() {
-  const { user, loading: authLoading, signIn } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isLiking, handleLikeToggle } = useLikeShop(); // Use useLikeShop hook
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);

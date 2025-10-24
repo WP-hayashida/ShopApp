@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 import {
   getShopById,
   updateShop,
@@ -34,7 +33,7 @@ export const useShopEditor = (shopId: string) => {
     },
   });
 
-  const { watch, setValue, handleSubmit, formState: { isSubmitting } } = form;
+  const { watch, setValue, handleSubmit } = form;
 
   const shop = watch(); // Watch all form values as the shop object
   const photo = watch("photo");
