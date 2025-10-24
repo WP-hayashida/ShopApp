@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/shared/Header";
 import { SearchProvider } from "@/context/SearchContext"; // Import SearchProvider
+import { AuthProvider } from "@/context/AuthContext"; // Import AuthProvider
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
 // フォントの設定
@@ -38,11 +39,13 @@ export default function RootLayout({
           apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string}
           libraries={["places", "geocoding", "routes"]}
         >
-          <SearchProvider>
-            <Header />
-            <main>{children}</main>
-            <Toaster /> {/* Render Toaster here */}
-          </SearchProvider>
+          <AuthProvider>
+            <SearchProvider>
+              <Header />
+              <main>{children}</main>
+              <Toaster /> {/* Render Toaster here */}
+            </SearchProvider>
+          </AuthProvider>
         </APIProvider>
       </body>
     </html>
